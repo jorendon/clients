@@ -1,0 +1,158 @@
+// W9 — Prisma schema (MySQL)
+// - Usuarios con roles ADMIN / EMPLEADO y eliminación lógica (deletedAt)
+// - UNA sola tabla Party para personas y empresas: cada registro puede ser
+//   cliente (isClient=true → visible en Clientes, admite contratistas) y/o
+//   contratista de otros clientes. Base para la futura carga masiva desde Excel
+//   (matching por normalizedDocument) y para la relación N:M autorreferenciada.
+// - Mantenedor de tipos de documento (SSN, FEI/EIN, ...)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  EMPLEADO
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique @db.VarChar(255)
+  name      String    @db.VarChar(120)
+  password  String    @db.VarChar(255)
+  role      Role      @default(EMPLEADO)
+  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@index([role])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+enum PartyKind {
+  PERSON
+  COMPANY
+}
+
+enum ClientType {
+  ACCOUNTING
+  PAYROLL
+}
+
+enum AddressKind {
+  FISCAL
+  MAILING
+  OTHER
+}
+
+model DocumentType {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique @db.VarChar(30)
+  name        String    @db.VarChar(120)
+  description String?   @db.VarChar(255)
+  isActive    Boolean   @default(true) @map("is_active")
+  deletedAt   DateTime? @map("deleted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  contacts PartyContact[]
+  parties  Party[]
+
+  @@map("document_types")
+}
+
+model Party {
+  id                 Int         @id @default(autoincrement())
+  kind               PartyKind
+  fullName           String      @map("full_name") @db.VarChar(180)
+  isClient           Boolean     @default(false) @map("is_client")
+  registryNumber     String?     @map("registry_number") @db.VarChar(60)
+  documentTypeId     Int?        @map("document_type_id")
+  documentNumber     String?     @map("document_number") @db.VarChar(60)
+  normalizedDocument String?     @unique @map("normalized_document") @db.VarChar(60)
+  email              String?     @db.VarChar(255)
+  phone              String?     @db.VarChar(40)
+  deletedAt          DateTime?   @map("deleted_at")
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
+
+  documentType  DocumentType?   @relation(fields: [documentTypeId], references: [id])
+  contacts      PartyContact[]
+  addresses     PartyAddress[]
+  clientTypes   PartyClientType[]
+  clientLinks   ClientContractor[] @relation("ClientSide")
+  contractorLinks ClientContractor[] @relation("ContractorSide")
+
+  @@index([kind])
+  @@index([isClient])
+  @@index([deletedAt])
+  @@map("parties")
+}
+
+model PartyClientType {
+  partyId    Int        @map("party_id")
+  clientType ClientType @map("client_type")
+
+  party Party @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  @@id([partyId, clientType])
+  @@map("party_client_types")
+}
+
+model PartyContact {
+  id             Int       @id @default(autoincrement())
+  partyId        Int       @map("party_id")
+  firstName      String?   @map("first_name") @db.VarChar(80)
+  lastName       String?   @map("last_name") @db.VarChar(80)
+  email          String?   @db.VarChar(255)
+  phone          String?   @db.VarChar(40)
+  documentTypeId Int?      @map("document_type_id")
+  documentNumber String?   @map("document_number") @db.VarChar(60)
+  isPrimary      Boolean   @default(false) @map("is_primary")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  party        Party         @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  documentType DocumentType? @relation(fields: [documentTypeId], references: [id])
+
+  @@index([partyId])
+  @@map("party_contacts")
+}
+
+model PartyAddress {
+  id           Int         @id @default(autoincrement())
+  partyId      Int         @map("party_id")
+  kind         AddressKind @default(FISCAL)
+  label        String?     @db.VarChar(80)
+  street       String?     @db.VarChar(180)
+  city         String?     @db.VarChar(80)
+  state        String?     @db.VarChar(10)
+  zip          String?     @db.VarChar(15)
+  sameAsFiscal Boolean     @default(false) @map("same_as_fiscal")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  party Party @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  @@index([partyId])
+  @@map("party_addresses")
+}
+
+model ClientContractor {
+  clientId     Int      @map("client_id")
+  contractorId Int      @map("contractor_id")
+  assignedAt   DateTime @default(now()) @map("assigned_at")
+
+  client     Party @relation("ClientSide", fields: [clientId], references: [id], onDelete: Cascade)
+  contractor Party @relation("ContractorSide", fields: [contractorId], references: [id], onDelete: Cascade)
+
+  @@id([clientId, contractorId])
+  @@index([contractorId])
+  @@map("client_contractors")
+}

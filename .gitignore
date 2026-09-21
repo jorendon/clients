@@ -1,0 +1,27 @@
+# Dependencias
+node_modules/
+
+# Build
+dist/
+build/
+
+# Entornos (no subir credenciales)
+.env
+!.env.example
+backend/.env
+frontend/.env
+
+# Prisma
+backend/generated/
+
+# Docker
+*.log
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+*.local
+
+# Tests
+coverage/

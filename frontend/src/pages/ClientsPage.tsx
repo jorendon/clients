@@ -1,0 +1,265 @@
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
+import {
+  createClient,
+  fetchClientDetail,
+  fetchClients,
+  unmarkClient,
+  updateClient,
+} from '../api/clients';
+import { fetchDocumentTypes } from '../api/documentTypes';
+import { PartyForm } from '../components/PartyForm';
+import type { ClientType, DocumentType, Party, PartyInput } from '../types/party';
+import { getClientTypes, VISIBLE_CLIENT_TYPES } from '../types/party';
+import { getApiErrorMessage } from '../utils/apiErrors';
+
+type Toast = { kind: 'success' | 'error'; message: string } | null;
+
+export function ClientsPage() {
+  const { t } = useTranslation();
+  const [clients, setClients] = useState<Party[]>([]);
+  const [docTypes, setDocTypes] = useState<DocumentType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<Party | null>(null);
+  const [confirmUnmark, setConfirmUnmark] = useState<Party | null>(null);
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'ALL' | ClientType>('ALL');
+  const [toast, setToast] = useState<Toast>(null);
+
+  async function load() {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const [list, types] = await Promise.all([fetchClients(search.trim(), typeFilter), fetchDocumentTypes()]);
+      setClients(list);
+      setDocTypes(types);
+    } catch (error) {
+      setLoadError(getApiErrorMessage(t, error));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(load, search ? 300 : 0);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, typeFilter]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 3500);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  function openCreate() {
+    setEditing(null);
+    setFormError(null);
+    setShowForm(true);
+  }
+
+  async function openEdit(client: Party) {
+    setFormError(null);
+    try {
+      setEditing(await fetchClientDetail(client.id));
+      setShowForm(true);
+    } catch (error) {
+      setToast({ kind: 'error', message: getApiErrorMessage(t, error) });
+    }
+  }
+
+  async function handleSubmit(input: PartyInput) {
+    setSaving(true);
+    setFormError(null);
+    try {
+      if (editing) {
+        const updated = await updateClient(editing.id, input);
+        setClients((prev) => prev.map((c) => (c.id === updated.id ? { ...updated, _count: c._count } : c)));
+      } else {
+        const created = await createClient(input);
+        setClients((prev) => [...prev, created].sort((a, b) => a.fullName.localeCompare(b.fullName)));
+      }
+      setShowForm(false);
+      setEditing(null);
+    } catch (error) {
+      setFormError(getApiErrorMessage(t, error));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleConfirmUnmark() {
+    if (!confirmUnmark) return;
+    try {
+      await unmarkClient(confirmUnmark.id);
+      setClients((prev) => prev.filter((c) => c.id !== confirmUnmark.id));
+    } catch (error) {
+      setToast({ kind: 'error', message: getApiErrorMessage(t, error) });
+    } finally {
+      setConfirmUnmark(null);
+    }
+  }
+
+  function clientTypeLabel(client: Party): string {
+    const types = getClientTypes(client);
+    if (types.length === 0) return t('common.notAssigned');
+    return types
+      .map((type) => (type === 'ACCOUNTING' ? t('clients.typeAccounting') : t('clients.typePayroll')))
+      .join(', ');
+  }
+
+  return (
+    <div className="page">
+      <header className="page-header">
+        <div>
+          <p className="eyebrow">{t('clients.eyebrow')}</p>
+          <h1>{t('clients.title')}</h1>
+          <p className="muted">{t('clients.subtitle', { count: clients.length })}</p>
+        </div>
+        <div className="btn-row">
+          <Link to="/clients/import" className="btn">
+            {t('import.bulkClients')}
+          </Link>
+          <button type="button" className="btn primary" onClick={openCreate}>
+            {t('clients.new')}
+          </button>
+        </div>
+      </header>
+
+      <section className="toolbar card" aria-label={t('clients.title')}>
+        <input
+          type="search"
+          placeholder={t('clients.searchPlaceholder')}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          aria-label={t('clients.searchLabel')}
+        />
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value as 'ALL' | ClientType)}
+          aria-label={t('clients.typeLabel')}
+        >
+          <option value="ALL">{t('clients.typeAll')}</option>
+          {VISIBLE_CLIENT_TYPES.map((type) => (
+            <option key={type} value={type}>
+              {type === 'ACCOUNTING' ? t('clients.typeAccounting') : t('clients.typePayroll')}
+            </option>
+          ))}
+        </select>
+      </section>
+
+      {toast && (
+        <p className={`toast ${toast.kind}`} role="status">
+          {toast.message}
+        </p>
+      )}
+
+      {loadError ? (
+        <div className="card empty">
+          <p className="empty-title">{t('clients.loadErrorTitle')}</p>
+          <p className="muted">{loadError}</p>
+          <button type="button" className="btn primary" onClick={load}>
+            {t('common.retry')}
+          </button>
+        </div>
+      ) : loading ? (
+        <div className="card" role="status" aria-label={t('clients.title')}>
+          <div className="skeleton" />
+          <div className="skeleton" />
+        </div>
+      ) : clients.length === 0 ? (
+        <div className="card empty">
+          <p className="empty-title">{t('clients.emptyTitle')}</p>
+          <p className="muted">{t('clients.emptyHint')}</p>
+        </div>
+      ) : (
+        <div className="card table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>{t('clients.colName')}</th>
+                <th>{t('clients.colKind')}</th>
+                <th>{t('clients.colClientType')}</th>
+                <th>{t('clients.colIdType')}</th>
+                <th>{t('clients.colId')}</th>
+                <th>{t('clients.colContractors')}</th>
+                <th className="actions-col">{t('common.actions')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {clients.map((client) => (
+                <tr key={client.id}>
+                  <td className="strong">
+                    <Link to={`/clients/${client.id}`}>{client.fullName}</Link>
+                  </td>
+                  <td>
+                    <span className={`badge ${client.kind === 'COMPANY' ? 'admin' : 'empleado'}`}>
+                      {client.kind === 'COMPANY' ? t('clients.kindCompany') : t('clients.kindPerson')}
+                    </span>
+                  </td>
+                  <td className="muted">{clientTypeLabel(client)}</td>
+                  <td className="muted mono">{client.documentType?.code ?? '—'}</td>
+                  <td className="muted mono">{client.documentNumber ?? client.registryNumber ?? '—'}</td>
+                  <td>{client._count?.clientLinks ?? '—'}</td>
+                  <td className="actions">
+                    <button type="button" className="btn small" onClick={() => openEdit(client)}>
+                      {t('common.edit')}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn small danger-outline"
+                      onClick={() => setConfirmUnmark(client)}
+                    >
+                      {t('clients.detail.unmark')}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {showForm && (
+        <div className="overlay" role="dialog" aria-modal="true">
+          <PartyForm
+            clientMode
+            initialParty={editing}
+            documentTypes={docTypes}
+            saving={saving}
+            formError={formError}
+            title={editing ? t('party.editClientTitle') : t('party.newClientTitle')}
+            submitLabel={editing ? t('party.saveClient') : t('party.createClient')}
+            onSubmit={handleSubmit}
+            onCancel={() => {
+              setShowForm(false);
+              setEditing(null);
+            }}
+          />
+        </div>
+      )}
+
+      {confirmUnmark && (
+        <div className="overlay" role="alertdialog" aria-modal="true">
+          <div className="card form">
+            <h2>{t('clients.detail.unmarkTitle', { name: confirmUnmark.fullName })}</h2>
+            <p className="muted">{t('clients.detail.unmarkDescription')}</p>
+            <div className="form-actions">
+              <button type="button" className="btn ghost" onClick={() => setConfirmUnmark(null)}>
+                {t('common.cancel')}
+              </button>
+              <button type="button" className="btn danger" onClick={handleConfirmUnmark}>
+                {t('clients.detail.unmark')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
