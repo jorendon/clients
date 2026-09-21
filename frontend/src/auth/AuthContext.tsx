@@ -10,14 +10,15 @@ export interface SessionUser {
   role: AppRole;
 }
 
-const TOKEN_KEY = 'w9-token';
-const USER_KEY = 'w9-user';
+const TOKEN_KEY = 'clients-token';
+const USER_KEY = 'clients-user';
 
 interface AuthContextValue {
   user: SessionUser | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  updateSessionUser: (updates: Partial<Pick<SessionUser, 'name' | 'email'>>) => void;
   isAdmin: boolean;
 }
 
@@ -26,6 +27,7 @@ const AuthContext = createContext<AuthContextValue>({
   token: null,
   login: async () => {},
   logout: () => {},
+  updateSessionUser: () => {},
   isAdmin: false,
 });
 
@@ -59,9 +61,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession({ user: null, token: null });
   }, []);
 
+  const updateSessionUser = useCallback((updates: Partial<Pick<SessionUser, 'name' | 'email'>>) => {
+    setSession((prev) => {
+      if (!prev.user) return prev;
+      const updated = { ...prev.user, ...updates };
+      localStorage.setItem(USER_KEY, JSON.stringify(updated));
+      return { ...prev, user: updated };
+    });
+  }, []);
+
   const value = useMemo(
-    () => ({ ...session, login, logout, isAdmin: session.user?.role === 'ADMIN' }),
-    [session, login, logout],
+    () => ({ ...session, login, logout, updateSessionUser, isAdmin: session.user?.role === 'ADMIN' }),
+    [session, login, logout, updateSessionUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

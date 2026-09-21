@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Pencil, Trash2 } from 'lucide-react';
 import {
   createContractor,
   deleteContractor,
@@ -11,6 +12,7 @@ import { fetchDocumentTypes as fetchTypes } from '../api/documentTypes';
 import { PartyForm } from '../components/PartyForm';
 import type { DocumentType, Party, PartyInput, PartyKind } from '../types/party';
 import { getApiErrorMessage } from '../utils/apiErrors';
+import { useSortableTable } from '../hooks/useSortableTable';
 
 type Toast = { kind: 'success' | 'error'; message: string } | null;
 
@@ -29,6 +31,17 @@ export function ContractorsPage() {
   const [kindFilter, setKindFilter] = useState<'ALL' | PartyKind>('ALL');
   const [onlyNonClients, setOnlyNonClients] = useState(false);
   const [toast, setToast] = useState<Toast>(null);
+
+  const { items: sortedItems, requestSort, getSortIndicator } = useSortableTable(
+    items,
+    { key: 'fullName', direction: 'asc' },
+    (item, key) => {
+      if (key === 'idCode') return item.documentType?.code;
+      if (key === 'idNumber') return item.documentNumber;
+      if (key === 'clientsCount') return item._count?.contractorLinks ?? 0;
+      return item[key as keyof Party];
+    }
+  );
 
   async function load() {
     setLoading(true);
@@ -182,16 +195,26 @@ export function ContractorsPage() {
           <table className="table">
             <thead>
               <tr>
-                <th>{t('contractors.colName')}</th>
-                <th>{t('contractors.colKind')}</th>
-                <th>{t('contractors.colIdType')}</th>
-                <th>{t('contractors.colId')}</th>
-                <th>{t('contractors.colClients')}</th>
+                <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('fullName')}>
+                  {t('contractors.colName')}{getSortIndicator('fullName')}
+                </th>
+                <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('kind')}>
+                  {t('contractors.colKind')}{getSortIndicator('kind')}
+                </th>
+                <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('idCode')}>
+                  {t('contractors.colIdType')}{getSortIndicator('idCode')}
+                </th>
+                <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('idNumber')}>
+                  {t('contractors.colId')}{getSortIndicator('idNumber')}
+                </th>
+                <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('clientsCount')}>
+                  {t('contractors.colClients')}{getSortIndicator('clientsCount')}
+                </th>
                 <th className="actions-col">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
-              {items.map((item) => (
+              {sortedItems.map((item) => (
                 <tr key={item.id}>
                   <td className="strong">
                     {item.fullName}{' '}
@@ -206,15 +229,21 @@ export function ContractorsPage() {
                   <td className="muted mono">{item.documentNumber ?? '—'}</td>
                   <td>{item._count?.contractorLinks ?? '—'}</td>
                   <td className="actions">
-                    <button type="button" className="btn small" onClick={() => openEdit(item)}>
-                      {t('common.edit')}
+                    <button 
+                      type="button" 
+                      className="btn small icon-only" 
+                      onClick={() => openEdit(item)}
+                      title={t('common.edit')}
+                    >
+                      <Pencil size={16} />
                     </button>
                     <button
                       type="button"
-                      className="btn small danger-outline"
+                      className="btn small danger-outline icon-only"
                       onClick={() => setConfirmDelete(item)}
+                      title={t('common.delete')}
                     >
-                      {t('common.delete')}
+                      <Trash2 size={16} />
                     </button>
                   </td>
                 </tr>

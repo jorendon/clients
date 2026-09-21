@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { Pencil, UserX } from 'lucide-react';
 import {
   createClient,
   fetchClientDetail,
@@ -13,6 +14,7 @@ import { PartyForm } from '../components/PartyForm';
 import type { ClientType, DocumentType, Party, PartyInput } from '../types/party';
 import { getClientTypes, VISIBLE_CLIENT_TYPES } from '../types/party';
 import { getApiErrorMessage } from '../utils/apiErrors';
+import { useSortableTable } from '../hooks/useSortableTable';
 
 type Toast = { kind: 'success' | 'error'; message: string } | null;
 
@@ -30,6 +32,14 @@ export function ClientsPage() {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<'ALL' | ClientType>('ALL');
   const [toast, setToast] = useState<Toast>(null);
+
+  const { items: sortedClients, requestSort, getSortIndicator } = useSortableTable(clients, { key: 'fullName', direction: 'asc' }, (item, key) => {
+    if (key === 'clientType') return clientTypeLabel(item);
+    if (key === 'idCode') return item.documentType?.code;
+    if (key === 'idNumber') return item.documentNumber ?? item.registryNumber;
+    if (key === 'contractorsCount') return item._count?.clientLinks ?? 0;
+    return item[key as keyof Party];
+  });
 
   async function load() {
     setLoading(true);
@@ -182,17 +192,29 @@ export function ClientsPage() {
           <table className="table">
             <thead>
               <tr>
-                <th>{t('clients.colName')}</th>
-                <th>{t('clients.colKind')}</th>
-                <th>{t('clients.colClientType')}</th>
-                <th>{t('clients.colIdType')}</th>
-                <th>{t('clients.colId')}</th>
-                <th>{t('clients.colContractors')}</th>
+                <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('fullName')}>
+                  {t('clients.colName')}{getSortIndicator('fullName')}
+                </th>
+                <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('kind')}>
+                  {t('clients.colKind')}{getSortIndicator('kind')}
+                </th>
+                <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('clientType')}>
+                  {t('clients.colClientType')}{getSortIndicator('clientType')}
+                </th>
+                <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('idCode')}>
+                  {t('clients.colIdType')}{getSortIndicator('idCode')}
+                </th>
+                <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('idNumber')}>
+                  {t('clients.colId')}{getSortIndicator('idNumber')}
+                </th>
+                <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('contractorsCount')}>
+                  {t('clients.colContractors')}{getSortIndicator('contractorsCount')}
+                </th>
                 <th className="actions-col">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
-              {clients.map((client) => (
+              {sortedClients.map((client) => (
                 <tr key={client.id}>
                   <td className="strong">
                     <Link to={`/clients/${client.id}`}>{client.fullName}</Link>
@@ -207,15 +229,21 @@ export function ClientsPage() {
                   <td className="muted mono">{client.documentNumber ?? client.registryNumber ?? '—'}</td>
                   <td>{client._count?.clientLinks ?? '—'}</td>
                   <td className="actions">
-                    <button type="button" className="btn small" onClick={() => openEdit(client)}>
-                      {t('common.edit')}
+                    <button 
+                      type="button" 
+                      className="btn small icon-only" 
+                      onClick={() => openEdit(client)}
+                      title={t('common.edit')}
+                    >
+                      <Pencil size={16} />
                     </button>
                     <button
                       type="button"
-                      className="btn small danger-outline"
+                      className="btn small danger-outline icon-only"
                       onClick={() => setConfirmUnmark(client)}
+                      title={t('clients.detail.unmark')}
                     >
-                      {t('clients.detail.unmark')}
+                      <UserX size={16} />
                     </button>
                   </td>
                 </tr>

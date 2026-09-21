@@ -24,7 +24,7 @@ describe('csvImport', () => {
     expect(normalizeHeader('Dirección')).toBe('direccion');
   });
 
-  it('mapea el CSV real de W9s a filas de contratista con dirección única', () => {
+  it('mapea el CSV real de Clients a filas de contratista con dirección única', () => {
     const rows = mapContractorRows(COBICA_CSV);
     expect(rows).toHaveLength(2);
     expect(rows[0]).toMatchObject({
@@ -67,12 +67,12 @@ describe('csvImport', () => {
 
   it('validateUploadFile acepta csv/xls/xlsx y rechaza otros', () => {
     const ok = (name: string, size = 100) => new File([new Uint8Array(size)], name);
-    expect(validateUploadFile(ok('w9s.csv'))).toBeNull();
-    expect(validateUploadFile(ok('W9S.XLSX'))).toBeNull();
-    expect(validateUploadFile(ok('w9s.xls'))).toBeNull();
-    expect(validateUploadFile(ok('w9s.pdf'))).toBe('import.invalidFormat');
-    expect(validateUploadFile(ok('w9s'))).toBe('import.invalidFormat');
-    expect(validateUploadFile(ok('w9s.csv', 11 * 1024 * 1024))).toBe('import.fileTooLarge');
+    expect(validateUploadFile(ok('clients.csv'))).toBeNull();
+    expect(validateUploadFile(ok('ClientsS.XLSX'))).toBeNull();
+    expect(validateUploadFile(ok('clients.xls'))).toBeNull();
+    expect(validateUploadFile(ok('clients.pdf'))).toBe('import.invalidFormat');
+    expect(validateUploadFile(ok('clients'))).toBe('import.invalidFormat');
+    expect(validateUploadFile(ok('clients.csv', 11 * 1024 * 1024))).toBe('import.fileTooLarge');
   });
 
   it('hasRequiredColumn exige columna de nombre', () => {
@@ -81,7 +81,7 @@ describe('csvImport', () => {
     expect(hasRequiredColumn({ headers: ['Nombre'], records: [] }, 'client')).toBe(true);
   });
 
-  it('parseUploadFile lee xlsx con el formato del Excel de W9s', async () => {
+  it('parseUploadFile lee xlsx con el formato del Excel de Clients', async () => {
     const workbook = utils.book_new();
     utils.book_append_sheet(
       workbook,
@@ -89,10 +89,10 @@ describe('csvImport', () => {
         ['Name', 'Adress', '', 'IdType', 'Id'],
         ['5 STAR CLEANING LLC', '3341 WOODBRIAR LANE', 'TALLAHASSEE, FL 32303', 'Federal ID:', '87-2773613'],
       ]),
-      'W9s',
+      'Clients',
     );
     const bytes = write(workbook, { type: 'array', bookType: 'xlsx' });
-    const file = new File([bytes], 'w9s.xlsx', {
+    const file = new File([bytes], 'clients.xlsx', {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
     const parsed = await parseUploadFile(file);

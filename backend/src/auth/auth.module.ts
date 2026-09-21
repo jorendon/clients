@@ -9,7 +9,7 @@ import { AuthService } from './auth.service.js';
   imports: [
     JwtModule.register({
       global: true,
-      secret: process.env.JWT_SECRET ?? 'w9-dev-secret-change-me',
+      secret: process.env.JWT_SECRET ?? 'clients-dev-secret-change-me',
       signOptions: { expiresIn: '12h' },
     }),
   ],

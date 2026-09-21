@@ -10,7 +10,7 @@ describe('UsersController', () => {
 
   const safeUser = {
     id: 1,
-    email: 'admin@w9.com',
+    email: 'admin@clients.com',
     name: 'Admin',
     role: Role.ADMIN,
     deletedAt: null,
@@ -41,7 +41,7 @@ describe('UsersController', () => {
   });
 
   it('POST /users delega en create', async () => {
-    const dto = { email: 'admin@w9.com', name: 'Admin', password: '123456', role: Role.ADMIN };
+    const dto = { email: 'admin@clients.com', name: 'Admin', password: '123456', role: Role.ADMIN };
     await expect(controller.create(dto)).resolves.toEqual(safeUser);
     expect(service.create).toHaveBeenCalledWith(dto);
   });

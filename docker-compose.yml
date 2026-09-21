@@ -1,25 +1,25 @@
 services:
   mysql:
     image: mysql:8.4
-    container_name: w9-mysql
+    container_name: clients-mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootsecret}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-w9}
-      MYSQL_USER: ${MYSQL_USER:-w9}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-w9secret}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-clients}
+      MYSQL_USER: ${MYSQL_USER:-clients}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-clientssecret}
     ports:
       - "${MYSQL_PORT:-3307}:3306"
     volumes:
-      - w9-mysql-data:/var/lib/mysql
+      - clients-mysql-data:/var/lib/mysql
     healthcheck:
-      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-uw9', '-pw9secret']
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-uclients', '-pclientssecret']
       interval: 5s
       timeout: 5s
       retries: 20
 
   backend:
-    container_name: w9-backend
+    container_name: clients-backend
     build:
       context: ./backend
       target: prod
@@ -30,13 +30,13 @@ services:
     environment:
       PORT: 3000
       FRONTEND_URL: http://localhost:5173
-      DATABASE_URL: mysql://${MYSQL_USER:-w9}:${MYSQL_PASSWORD:-w9secret}@mysql:3306/${MYSQL_DATABASE:-w9}
-      JWT_SECRET: ${JWT_SECRET:-w9-dev-secret-change-me}
+      DATABASE_URL: mysql://${MYSQL_USER:-clients}:${MYSQL_PASSWORD:-clientssecret}@mysql:3306/${MYSQL_DATABASE:-clients}
+      JWT_SECRET: ${JWT_SECRET:-clients-dev-secret-change-me}
     ports:
       - "${BACKEND_PORT:-3000}:3000"
 
   frontend:
-    container_name: w9-frontend
+    container_name: clients-frontend
     build:
       context: ./frontend
       target: prod
@@ -49,4 +49,4 @@ services:
       - "${FRONTEND_PORT:-5173}:80"
 
 volumes:
-  w9-mysql-data:
+  clients-mysql-data:

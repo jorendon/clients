@@ -97,11 +97,12 @@ export function UsersPage() {
     if (!confirmDelete) return;
     try {
       const removed = await deleteUser(confirmDelete.id);
-      setUsers((prev) =>
-        showDeleted
-          ? prev.map((u) => (u.id === removed.id ? removed : u))
-          : prev.filter((u) => u.id !== removed.id),
-      );
+      // Activar automáticamente "Mostrar inactivos" para que el admin vea al usuario desactivado
+      if (!showDeleted) {
+        setShowDeleted(true);
+      } else {
+        setUsers((prev) => prev.map((u) => (u.id === removed.id ? removed : u)));
+      }
       setToast({ kind: 'success', message: t('toast.deleted', { name: confirmDelete.name }) });
     } catch (error) {
       setToast({ kind: 'error', message: getApiErrorMessage(t, error) });

@@ -1,6 +1,6 @@
-# OurClients — Gestión de clientes y contratistas (Vite + Nest.js + MySQL + Docker)
+# Clients — Gestión de clientes y contratistas (Vite + Nest.js + MySQL + Docker)
 
-Aplicación **OurClients**: registro de clientes (contabilidad y/o payroll, selección
+Aplicación **Clients**: registro de clientes (contabilidad y/o payroll, selección
 múltiple) con múltiples contactos y direcciones, mantenedor de tipos de
 documento, y contratistas (personas o empresas) asociadas a clientes. Acceso con
 login (admin/empleado), bilingüe español/inglés, diseño sobrio con drawer
@@ -21,8 +21,8 @@ La app arranca en `/login`. Sesión JWT (12 h) con roles:
 
 | Usuario | Rol | Contraseña inicial |
 | ------- | --- | ------------------ |
-| `jonathan.rendon@gmail.com` | ADMIN (gestiona usuarios) | `OurClients#Adm2026!` |
-| `michrotel@gmail.com` | EMPLEADO | `OurClients#Emp2026!` |
+| `jonathan.rendon@gmail.com` | ADMIN (gestiona usuarios) | `Clients#Adm2026!` |
+| `michrotel@gmail.com` | EMPLEADO | `Clients#Emp2026!` |
 
 (Creados con `npm run seed`; re-ejecutarlo resetea las contraseñas.)
 Sin token el API responde 401 y el frontend vuelve al login.
@@ -142,7 +142,7 @@ docker compose up --build
 
 - Frontend: http://localhost:5173
 - Backend: http://localhost:3000/api/clients
-- MySQL: localhost:3307 (user `w9` / db `w9`; puerto 3307 por defecto para no
+- MySQL: localhost:3307 (user `clients` / db `clients`; puerto 3307 por defecto para no
   chocar con otros MySQL locales — ajustable con `MYSQL_PORT` en `.env`)
 
 Las migraciones de Prisma corren automáticamente al iniciar el backend
@@ -160,7 +160,7 @@ Terminal 2 — Backend:
 
 ```bash
 cd backend
-cp .env.example .env   # ajusta DATABASE_URL a mysql://w9:w9secret@localhost:3307/w9
+cp .env.example .env   # ajusta DATABASE_URL a mysql://clients:clientssecret@localhost:3307/clients
 npx prisma migrate dev --name xxx
 npm run seed
 npm run start:dev

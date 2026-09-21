@@ -1,9 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { HelpCircle } from 'lucide-react';
 import { importClientContractors, type ImportReport } from '../api/import';
 import { ImportStagingTable, type StagingColumn } from '../components/ImportStagingTable';
+import { ImportHelpModal } from '../components/ImportHelpModal';
 import { getApiErrorMessage, translateBackendMessage } from '../utils/apiErrors';
+import { fetchDocumentTypes } from '../api/documentTypes';
+import type { DocumentType } from '../types/party';
 import {
   hasRequiredColumn,
   mapContractorRows,
@@ -12,7 +16,7 @@ import {
   type StagedContractorRow,
 } from '../utils/csvImport';
 
-function ImportReportView({ report }: { report: ImportReport }) {
+function ImportReportView({ report, clientId }: { report: ImportReport; clientId: number }) {
   const { t } = useTranslation();
   return (
     <div className="card">
@@ -48,6 +52,11 @@ function ImportReportView({ report }: { report: ImportReport }) {
           ))}
         </ul>
       )}
+      <div style={{ marginTop: '1.5rem' }}>
+        <Link to={`/clients/${clientId}?tab=contractors`} className="btn primary">
+          Ir a contratistas de este cliente
+        </Link>
+      </div>
     </div>
   );
 }
@@ -61,6 +70,12 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
   const [processing, setProcessing] = useState(false);
   const [processError, setProcessError] = useState<string | null>(null);
   const [report, setReport] = useState<ImportReport | null>(null);
+  const [docTypes, setDocTypes] = useState<DocumentType[]>([]);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+
+  useEffect(() => {
+    fetchDocumentTypes().then(setDocTypes).catch(console.error);
+  }, []);
 
   const columns: StagingColumn<StagedContractorRow>[] = useMemo(
     () => [
@@ -75,12 +90,18 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
         ],
       },
       { key: 'address', label: t('import.colAddress'), width: '260px' },
-      { key: 'idType', label: t('contractors.colIdType') },
+      {
+        key: 'documentTypeId',
+        label: t('party.documentType'),
+        kind: 'select',
+        options: docTypes.map((dt) => ({ value: String(dt.id), label: dt.name })),
+        width: '180px',
+      },
       { key: 'id', label: t('party.contactDocNumber') },
       { key: 'email', label: t('party.email') },
       { key: 'phone', label: t('party.phone') },
     ],
-    [t],
+    [t, docTypes],
   );
 
   const filtered = useMemo(() => {
@@ -113,8 +134,33 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
         throw new Error('missing-column');
       }
       const mapped = mapContractorRows(parsed);
-      if (mapped.length === 0) throw new Error('empty');
-      setRows(mapped);
+
+      const normalizedDocTypes = docTypes.map(dt => ({
+        id: String(dt.id),
+        matchers: [
+          dt.code.toLowerCase().replace(/[^a-z0-9]/g, ''),
+          dt.name.toLowerCase().replace(/[^a-z0-9]/g, '')
+        ]
+      }));
+
+      const withDocTypes = mapped.map(row => {
+        if (!row.idType) return row;
+        const search = row.idType.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const match = normalizedDocTypes.find(dt => dt.matchers.includes(search));
+        return match ? { ...row, documentTypeId: match.id } : row;
+      });
+
+      // Remove duplicate rows in the parsed file
+      const seen = new Set<string>();
+      const deduplicated = withDocTypes.filter(row => {
+        const uniqueKey = (row.id ? row.id.toLowerCase() : row.name.toLowerCase()).trim();
+        if (seen.has(uniqueKey)) return false;
+        seen.add(uniqueKey);
+        return true;
+      });
+
+      if (deduplicated.length === 0) throw new Error('empty');
+      setRows(deduplicated);
       setFileName(file.name);
       setSearch('');
     } catch (error) {
@@ -130,6 +176,21 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
 
   function handleChange(key: number, field: keyof StagedContractorRow, value: string) {
     setRows((prev) => prev.map((row) => (row.key === key ? { ...row, [field]: value } : row)));
+  }
+
+  function handleBulkChange(keys: number[], field: keyof StagedContractorRow, value: string) {
+    const next = rows.map((r) => {
+      if (keys.includes(r.key)) {
+        return { ...r, [field]: value };
+      }
+      return r;
+    });
+    setRows(next);
+  }
+
+  function handleBulkDelete(keys: number[]) {
+    const next = rows.filter((r) => !keys.includes(r.key));
+    setRows(next);
   }
 
   async function handleProcess() {
@@ -152,7 +213,19 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
       <header className="page-header">
         <div>
           <p className="eyebrow">{t('import.eyebrowContractors')}</p>
-          <h1>{t('import.titleContractors')}</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h1>{t('import.titleContractors')}</h1>
+            <button 
+              type="button" 
+              className="btn small ghost" 
+              onClick={() => setIsHelpOpen(true)}
+              aria-label={t('import.helpTitle')}
+              title={t('import.helpTitle')}
+              style={{ color: 'var(--brand)' }}
+            >
+              <HelpCircle size={20} />
+            </button>
+          </div>
           <p className="muted">{t('import.subtitle')}</p>
         </div>
       </header>
@@ -182,6 +255,8 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
             getRowLabel={(row) => row.name}
             onSearch={setSearch}
             onChange={handleChange}
+            onBulkChange={handleBulkChange}
+            onBulkDelete={handleBulkDelete}
             onDelete={(key) => setRows((prev) => prev.filter((row) => row.key !== key))}
           />
           {processError && (
@@ -202,7 +277,13 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
         </>
       )}
 
-      {report && <ImportReportView report={report} />}
+      {report && <ImportReportView report={report} clientId={clientId} />}
+
+      <ImportHelpModal 
+        isOpen={isHelpOpen} 
+        onClose={() => setIsHelpOpen(false)} 
+        mode="contractor" 
+      />
     </div>
   );
 }

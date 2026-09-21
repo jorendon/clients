@@ -18,6 +18,7 @@ export interface StagedContractorRow {
   /** Dirección completa en un solo campo ("CALLE, CIUDAD, ST ZIP") */
   address: string;
   idType: string;
+  documentTypeId: string;
   id: string;
   email: string;
   phone: string;
@@ -30,6 +31,7 @@ export interface StagedClientRow {
   clientType: string;
   registryNumber: string;
   documentType: string;
+  documentTypeId: string;
   documentNumber: string;
   email: string;
   phone: string;

@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import type { User } from '../types/user';
+import { Pencil, Trash2, RotateCcw } from 'lucide-react';
+import { useSortableTable } from '../hooks/useSortableTable';
 
 interface UserTableProps {
   users: User[];
@@ -15,6 +17,10 @@ export function roleBadge(role: User['role']) {
 
 export function UserTable({ users, loading, onEdit, onDelete, onRestore }: UserTableProps) {
   const { t } = useTranslation();
+  const { items: sortedUsers, requestSort, getSortIndicator } = useSortableTable(users, { key: 'name', direction: 'asc' }, (item, key) => {
+    if (key === 'status') return Boolean(item.deletedAt) ? 1 : 0; // 0 = active, 1 = inactive
+    return item[key as keyof User];
+  });
 
   if (loading) {
     return (
@@ -40,15 +46,23 @@ export function UserTable({ users, loading, onEdit, onDelete, onRestore }: UserT
       <table className="table">
         <thead>
           <tr>
-            <th>{t('table.name')}</th>
-            <th>{t('table.email')}</th>
-            <th>{t('table.role')}</th>
-            <th>{t('table.status')}</th>
+            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('name')}>
+              {t('table.name')}{getSortIndicator('name')}
+            </th>
+            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('email')}>
+              {t('table.email')}{getSortIndicator('email')}
+            </th>
+            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('role')}>
+              {t('table.role')}{getSortIndicator('role')}
+            </th>
+            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('status')}>
+              {t('table.status')}{getSortIndicator('status')}
+            </th>
             <th className="actions-col">{t('table.actions')}</th>
           </tr>
         </thead>
         <tbody>
-          {users.map((user) => {
+          {sortedUsers.map((user) => {
             const deleted = Boolean(user.deletedAt);
             return (
               <tr key={user.id} className={deleted ? 'deleted' : undefined}>
@@ -67,29 +81,32 @@ export function UserTable({ users, loading, onEdit, onDelete, onRestore }: UserT
                     <>
                       <button
                         type="button"
-                        className="btn small"
+                        className="btn small icon-only"
                         onClick={() => onEdit(user)}
+                        title={t('table.edit')}
                         aria-label={`${t('table.edit')} ${user.name}`}
                       >
-                        {t('table.edit')}
+                        <Pencil size={16} />
                       </button>
                       <button
                         type="button"
-                        className="btn small danger-outline"
+                        className="btn small danger-outline icon-only"
                         onClick={() => onDelete(user)}
+                        title={t('table.delete')}
                         aria-label={`${t('table.delete')} ${user.name}`}
                       >
-                        {t('table.delete')}
+                        <Trash2 size={16} />
                       </button>
                     </>
                   ) : (
                     <button
                       type="button"
-                      className="btn small primary"
+                      className="btn small primary icon-only"
                       onClick={() => onRestore(user)}
+                      title={t('table.restore')}
                       aria-label={`${t('table.restore')} ${user.name}`}
                     >
-                      {t('table.restore')}
+                      <RotateCcw size={16} />
                     </button>
                   )}
                 </td>

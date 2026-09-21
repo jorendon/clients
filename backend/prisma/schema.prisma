@@ -1,4 +1,4 @@
-// W9 — Prisma schema (MySQL)
+// Clients — Prisma schema (MySQL)
 // - Usuarios con roles ADMIN / EMPLEADO y eliminación lógica (deletedAt)
 // - UNA sola tabla Party para personas y empresas: cada registro puede ser
 //   cliente (isClient=true → visible en Clientes, admite contratistas) y/o

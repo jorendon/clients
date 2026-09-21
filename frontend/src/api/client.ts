@@ -11,7 +11,7 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use((config) => {
   const lang = localStorage.getItem(LANG_STORAGE_KEY) ?? 'es';
   config.headers.set('Accept-Language', lang);
-  const token = localStorage.getItem('w9-token');
+  const token = localStorage.getItem('clients-token');
   if (token) config.headers.set('Authorization', `Bearer ${token}`);
   return config;
 });
@@ -21,8 +21,8 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error?.response?.status === 401 && !error.config?.url?.includes('/auth/login')) {
-      localStorage.removeItem('w9-token');
-      localStorage.removeItem('w9-user');
+      localStorage.removeItem('clients-token');
+      localStorage.removeItem('clients-user');
       if (!window.location.pathname.startsWith('/login')) {
         window.location.assign('/login');
       }

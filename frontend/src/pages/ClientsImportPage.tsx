@@ -1,9 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { HelpCircle } from 'lucide-react';
 import { importClients, type ImportReport } from '../api/import';
 import { ImportStagingTable, type StagingColumn } from '../components/ImportStagingTable';
+import { ImportHelpModal } from '../components/ImportHelpModal';
 import { getApiErrorMessage, translateBackendMessage } from '../utils/apiErrors';
+import { fetchDocumentTypes } from '../api/documentTypes';
+import type { DocumentType } from '../types/party';
 import { hasRequiredColumn, mapClientRows, parseUploadFile, validateUploadFile, type StagedClientRow } from '../utils/csvImport';
 import { VISIBLE_CLIENT_TYPES } from '../types/party';
 
@@ -56,6 +60,12 @@ export function ClientsImportPage() {
   const [processing, setProcessing] = useState(false);
   const [processError, setProcessError] = useState<string | null>(null);
   const [report, setReport] = useState<ImportReport | null>(null);
+  const [docTypes, setDocTypes] = useState<DocumentType[]>([]);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+
+  useEffect(() => {
+    fetchDocumentTypes().then(setDocTypes).catch(console.error);
+  }, []);
 
   const columns: StagingColumn<StagedClientRow>[] = useMemo(
     () => [
@@ -80,13 +90,20 @@ export function ClientsImportPage() {
             type === 'ACCOUNTING' ? t('clients.typeAccounting') : t('clients.typePayroll'),
         })),
       },
+      {
+        key: 'documentTypeId',
+        label: t('party.documentType'),
+        kind: 'select',
+        options: docTypes.map((dt) => ({ value: String(dt.id), label: dt.name })),
+        width: '180px',
+      },
       { key: 'documentNumber', label: t('party.documentNumber') },
       { key: 'registryNumber', label: t('party.registryNumber') },
       { key: 'email', label: t('party.email') },
       { key: 'phone', label: t('party.phone') },
       { key: 'address', label: t('import.colAddress'), width: '260px' },
     ],
-    [t],
+    [t, docTypes],
   );
 
   const filtered = useMemo(() => {
@@ -119,8 +136,24 @@ export function ClientsImportPage() {
         throw new Error('missing-column');
       }
       const mapped = mapClientRows(parsed);
-      if (mapped.length === 0) throw new Error('empty');
-      setRows(mapped);
+      
+      const normalizedDocTypes = docTypes.map(dt => ({
+        id: String(dt.id),
+        matchers: [
+          dt.code.toLowerCase().replace(/[^a-z0-9]/g, ''),
+          dt.name.toLowerCase().replace(/[^a-z0-9]/g, '')
+        ]
+      }));
+
+      const withDocTypes = mapped.map(row => {
+        if (!row.documentType) return row;
+        const search = row.documentType.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const match = normalizedDocTypes.find(dt => dt.matchers.includes(search));
+        return match ? { ...row, documentTypeId: match.id } : row;
+      });
+
+      if (withDocTypes.length === 0) throw new Error('empty');
+      setRows(withDocTypes);
       setFileName(file.name);
       setSearch('');
     } catch (error) {
@@ -136,6 +169,15 @@ export function ClientsImportPage() {
 
   function handleChange(key: number, field: keyof StagedClientRow, value: string) {
     setRows((prev) => prev.map((row) => (row.key === key ? { ...row, [field]: value } : row)));
+  }
+
+  function handleBulkChange(keys: number[], field: keyof StagedClientRow, value: string) {
+    const keySet = new Set(keys);
+    setRows((prev) => prev.map((row) => (keySet.has(row.key) ? { ...row, [field]: value } : row)));
+  }
+
+  function handleBulkDelete(keys: number[]) {
+    setRows((prev) => prev.filter((row) => !keys.includes(row.key)));
   }
 
   async function handleProcess() {
@@ -158,7 +200,19 @@ export function ClientsImportPage() {
       <header className="page-header">
         <div>
           <p className="eyebrow">{t('import.eyebrowClients')}</p>
-          <h1>{t('import.titleClients')}</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h1>{t('import.titleClients')}</h1>
+            <button 
+              type="button" 
+              className="btn small ghost" 
+              onClick={() => setIsHelpOpen(true)}
+              aria-label={t('import.helpTitle')}
+              title={t('import.helpTitle')}
+              style={{ color: 'var(--brand)' }}
+            >
+              <HelpCircle size={20} />
+            </button>
+          </div>
           <p className="muted">{t('import.subtitle')}</p>
         </div>
       </header>
@@ -188,6 +242,8 @@ export function ClientsImportPage() {
             getRowLabel={(row) => row.fullName}
             onSearch={setSearch}
             onChange={handleChange}
+            onBulkChange={handleBulkChange}
+            onBulkDelete={handleBulkDelete}
             onDelete={(key) => setRows((prev) => prev.filter((row) => row.key !== key))}
           />
           {processError && (
@@ -209,6 +265,12 @@ export function ClientsImportPage() {
       )}
 
       {report && <ImportReportView report={report} />}
+
+      <ImportHelpModal 
+        isOpen={isHelpOpen} 
+        onClose={() => setIsHelpOpen(false)} 
+        mode="client" 
+      />
     </div>
   );
 }

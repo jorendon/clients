@@ -1,5 +1,21 @@
 {
+  "dashboard": {
+    "greeting": "Bienvenido/a de nuevo, {{name}}",
+    "subtitle": "Aquí tienes un resumen y accesos rápidos a tu espacio de trabajo.",
+    "clients": "Gestión de Clientes",
+    "clientsDesc": "Ver y administrar el directorio de empresas y clientes.",
+    "contractors": "Contratistas",
+    "contractorsDesc": "Gestionar y visualizar el catálogo de contratistas.",
+    "settings": "Configuración y Branding",
+    "settingsDesc": "Personalizar logo, colores y datos de la compañía.",
+    "users": "Administración de Usuarios",
+    "usersDesc": "Invitar y administrar el acceso de tu equipo al sistema.",
+    "import": "Carga Masiva",
+    "importDesc": "Importar múltiples registros desde un archivo CSV o Excel.",
+    "quickActions": "Acciones Rápidas"
+  },
   "nav": {
+    "home": "Inicio",
     "brandTag": "Toolbox",
     "users": "Usuarios",
     "clients": "Clientes",
@@ -7,10 +23,13 @@
     "docTypes": "Tipos de documento",
     "settings": "Configuración",
     "collapse": "Recoger menú",
-    "expand": "Ampliar menú"
+    "expand": "Ampliar menú",
+    "directory": "Directorio",
+    "admin": "Administración"
   },
   "auth": {
     "title": "Iniciar sesión",
+    "subtitle": "¡Bienvenido/a de nuevo! Por favor ingresa tus datos.",
     "email": "Email",
     "password": "Contraseña",
     "submit": "Entrar",
@@ -26,6 +45,7 @@
     "restore": "Restaurar",
     "retry": "Reintentar",
     "search": "Buscar",
+    "close": "Cerrar",
     "actions": "Acciones",
     "active": "Activo",
     "inactive": "Inactivo",
@@ -34,7 +54,7 @@
     "notAssigned": "Sin asignar"
   },
   "users": {
-    "eyebrow": "OurClients · Administración",
+    "eyebrow": "Clients · Administración",
     "title": "Usuarios",
     "subtitleActive_one": "{{count}} activo",
     "subtitleActive_other": "{{count}} activos",
@@ -103,7 +123,7 @@
     "restored": "{{name}} restaurado"
   },
   "clients": {
-    "eyebrow": "OurClients · Clientes",
+    "eyebrow": "Clients · Clientes",
     "title": "Clientes",
     "subtitle_one": "{{count}} cliente de contabilidad o payroll",
     "subtitle_other": "{{count}} clientes de contabilidad o payroll",
@@ -148,7 +168,7 @@
     }
   },
   "contractors": {
-    "eyebrow": "OurClients · Contratistas",
+    "eyebrow": "Clients · Contratistas",
     "title": "Contratistas",
     "subtitle": "Personas y empresas. Las marcadas como cliente también pueden tener contratistas.",
     "new": "+ Nueva contratista",
@@ -172,7 +192,7 @@
     "deleteDescription": "Es una eliminación lógica: desaparecerá de clientes y contratistas, pero podrás restaurarla."
   },
   "docTypes": {
-    "eyebrow": "OurClients · Catálogos",
+    "eyebrow": "Clients · Catálogos",
     "title": "Tipos de documento",
     "subtitle": "SSN, FEI/EIN y otros identificadores usados en contactos y entidades.",
     "new": "+ Nuevo tipo",
@@ -245,9 +265,9 @@
     }
   },
   "import": {
-    "eyebrowClients": "OurClients · Carga masiva",
+    "eyebrowClients": "Clients · Carga masiva",
     "titleClients": "Importar clientes",
-    "eyebrowContractors": "OurClients · Carga masiva",
+    "eyebrowContractors": "Clients · Carga masiva",
     "titleContractors": "Importar contratistas",
     "subtitle": "1. Sube el CSV · 2. Revisa y corrige en la tabla (usa el buscador) · 3. Procesa la carga.",
     "fileLabel": "Archivo CSV o Excel",
@@ -271,9 +291,13 @@
     "statErrors": "errores",
     "rowLabel": "Fila {{row}}",
     "bulkClients": "Carga masiva",
-    "bulkContractors": "Cargar contratistas"
+    "bulkContractors": "Cargar contratistas",
+    "helpTitle": "Formato del archivo",
+    "helpDesc": "Tu archivo debe contener los siguientes encabezados (las columnas extra serán ignoradas). También puedes descargar un ejemplo:",
+    "downloadTemplate": "Descargar plantilla CSV",
+    "close": "Cerrar"
   },
-  "settings": {    "eyebrow": "OurClients · Configuración",
+  "settings": {    "eyebrow": "Clients · Configuración",
     "title": "Datos de la empresa",
     "subtitle": "Personaliza el logo, el nombre y los datos que se muestran en la aplicación.",
     "companyName": "Nombre de la empresa *",
@@ -289,7 +313,11 @@
     "sidebarColor": "Color del menú",
     "save": "Guardar cambios",
     "reset": "Restablecer",
-    "saved": "Datos guardados"
+    "saved": "Configuración guardada",
+    "addEmail": "Añadir correo",
+    "addPhone": "Añadir teléfono",
+    "addAddress": "Añadir dirección",
+    "default": "Por defecto"
   },
   "errors": {
     "user": {
@@ -335,5 +363,20 @@
     "label": "Idioma",
     "spanish": "Español",
     "english": "English"
+  },
+  "profile": {
+    "eyebrow": "Clients · Mi perfil",
+    "title": "Mi perfil",
+    "subtitle": "Actualiza tu nombre, correo electrónico o contraseña.",
+    "name": "Nombre *",
+    "email": "Email *",
+    "newPassword": "Nueva contraseña",
+    "newPasswordPlaceholder": "Dejar vacío para no cambiar",
+    "confirmPassword": "Confirmar contraseña",
+    "confirmPasswordPlaceholder": "Repite la nueva contraseña",
+    "passwordHint": "Cambia tu contraseña (opcional). Mínimo 6 caracteres.",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "saved": "Perfil actualizado correctamente",
+    "noChanges": "No hay cambios que guardar"
   }
 }

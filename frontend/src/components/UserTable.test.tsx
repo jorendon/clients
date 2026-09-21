@@ -7,8 +7,8 @@ import type { User } from '../types/user';
 const users: User[] = [
   {
     id: 1,
-    email: 'admin@w9.com',
-    name: 'Admin W9',
+    email: 'admin@clients.com',
+    name: 'Admin Clients',
     role: 'ADMIN',
     deletedAt: null,
     createdAt: new Date().toISOString(),
@@ -16,8 +16,8 @@ const users: User[] = [
   },
   {
     id: 2,
-    email: 'emple@w9.com',
-    name: 'Emple W9',
+    email: 'emple@clients.com',
+    name: 'Emple Clients',
     role: 'EMPLEADO',
     deletedAt: new Date().toISOString(),
     createdAt: new Date().toISOString(),
@@ -50,18 +50,18 @@ describe('UserTable', () => {
       <UserTable users={users} loading={false} onEdit={onEdit} onDelete={onDelete} onRestore={onRestore} />,
     );
 
-    expect(screen.getByText('Admin W9')).toBeInTheDocument();
+    expect(screen.getByText('Admin Clients')).toBeInTheDocument();
     expect(screen.getByText('ADMIN')).toBeInTheDocument();
     expect(screen.getByText('Activo')).toBeInTheDocument();
     expect(screen.getByText('Inactivo')).toBeInTheDocument();
 
-    await user.click(screen.getByLabelText('Editar Admin W9'));
+    await user.click(screen.getByLabelText('Editar Admin Clients'));
     expect(onEdit).toHaveBeenCalledWith(users[0]);
 
-    await user.click(screen.getByLabelText('Eliminar Admin W9'));
+    await user.click(screen.getByLabelText('Eliminar Admin Clients'));
     expect(onDelete).toHaveBeenCalledWith(users[0]);
 
-    await user.click(screen.getByLabelText('Restaurar Emple W9'));
+    await user.click(screen.getByLabelText('Restaurar Emple Clients'));
     expect(onRestore).toHaveBeenCalledWith(users[1]);
   });
 });

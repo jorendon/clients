@@ -48,10 +48,10 @@ describe('AuthContext', () => {
     await user.click(screen.getByRole('button', { name: 'in' }));
     expect(await screen.findByText('a@b.com')).toBeInTheDocument();
     expect(screen.getByText('admin')).toBeInTheDocument();
-    expect(localStorage.getItem('w9-token')).toBe('tok');
+    expect(localStorage.getItem('clients-token')).toBe('tok');
 
     await user.click(screen.getByRole('button', { name: 'out' }));
     expect(await screen.findByText('anon')).toBeInTheDocument();
-    expect(localStorage.getItem('w9-token')).toBeNull();
+    expect(localStorage.getItem('clients-token')).toBeNull();
   });
 });

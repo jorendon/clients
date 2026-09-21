@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { fetchClientDetail } from '../api/clients';
 import { fetchDocumentTypes } from '../api/documentTypes';
 import { ClientContractorsSection } from '../components/ClientContractorsSection';
@@ -26,6 +26,12 @@ export function ClientDetailPage({ clientId }: { clientId: number }) {
   const [docTypes, setDocTypes] = useState<DocumentType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'contacts';
+
+  function handleTabChange(tab: string) {
+    setSearchParams({ tab });
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -109,7 +115,28 @@ export function ClientDetailPage({ clientId }: { clientId: number }) {
         </Link>
       </header>
 
-      <div className="grid2stack">
+      <div className="tabs">
+        <button
+          className={`tab ${activeTab === 'contacts' ? 'active' : ''}`}
+          onClick={() => handleTabChange('contacts')}
+        >
+          {t('clients.detail.contacts')}
+        </button>
+        <button
+          className={`tab ${activeTab === 'addresses' ? 'active' : ''}`}
+          onClick={() => handleTabChange('addresses')}
+        >
+          {t('clients.detail.addresses')}
+        </button>
+        <button
+          className={`tab ${activeTab === 'contractors' ? 'active' : ''}`}
+          onClick={() => handleTabChange('contractors')}
+        >
+          {t('clients.detail.contractors')}
+        </button>
+      </div>
+
+      {activeTab === 'contacts' && (
         <section className="card">
           <h2>{t('clients.detail.contacts')}</h2>
           {!client.contacts?.length ? (
@@ -134,7 +161,9 @@ export function ClientDetailPage({ clientId }: { clientId: number }) {
             </ul>
           )}
         </section>
+      )}
 
+      {activeTab === 'addresses' && (
         <section className="card">
           <h2>{t('clients.detail.addresses')}</h2>
           {!client.addresses?.length ? (
@@ -158,9 +187,11 @@ export function ClientDetailPage({ clientId }: { clientId: number }) {
             </ul>
           )}
         </section>
-      </div>
+      )}
 
-      <ClientContractorsSection clientId={clientId} />
+      {activeTab === 'contractors' && (
+        <ClientContractorsSection clientId={clientId} />
+      )}
     </div>
   );
 }

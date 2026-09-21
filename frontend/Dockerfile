@@ -1,4 +1,4 @@
-# W9 frontend — Vite + React build servido con nginx
+# Clients frontend — Vite + React build servido con nginx
 FROM node:22-alpine AS build
 WORKDIR /app
 ARG VITE_API_URL=http://localhost:3000/api

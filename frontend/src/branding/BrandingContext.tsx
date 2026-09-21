@@ -1,26 +1,32 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { applyTheme } from './theme';
 
+export interface ContactField {
+  id: string;
+  value: string;
+  isPrimary: boolean;
+}
+
 export interface Branding {
   companyName: string;
   tagline: string;
   logoUrl: string;
-  email: string;
-  phone: string;
-  address: string;
+  emails: ContactField[];
+  phones: ContactField[];
+  addresses: ContactField[];
   primaryColor: string;
   sidebarColor: string;
 }
 
-const STORAGE_KEY = 'w9-branding';
+const STORAGE_KEY = 'clients-branding';
 
 export const DEFAULT_BRANDING: Branding = {
-  companyName: 'OurClients',
+  companyName: 'Clients',
   tagline: 'Clients & Contractors',
   logoUrl: '',
-  email: '',
-  phone: '',
-  address: '',
+  emails: [],
+  phones: [],
+  addresses: [],
   primaryColor: '#2563eb',
   sidebarColor: '#0f172a',
 };
@@ -29,7 +35,21 @@ function loadBranding(): Branding {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_BRANDING;
-    return { ...DEFAULT_BRANDING, ...(JSON.parse(raw) as Partial<Branding>) };
+    const parsed = JSON.parse(raw);
+
+    const generateId = () => Math.random().toString(36).substr(2, 9);
+
+    const emails = parsed.emails ?? (parsed.email ? [{ id: generateId(), value: parsed.email, isPrimary: true }] : []);
+    const phones = parsed.phones ?? (parsed.phone ? [{ id: generateId(), value: parsed.phone, isPrimary: true }] : []);
+    const addresses = parsed.addresses ?? (parsed.address ? [{ id: generateId(), value: parsed.address, isPrimary: true }] : []);
+
+    return { 
+      ...DEFAULT_BRANDING, 
+      ...parsed,
+      emails,
+      phones,
+      addresses
+    };
   } catch {
     return DEFAULT_BRANDING;
   }

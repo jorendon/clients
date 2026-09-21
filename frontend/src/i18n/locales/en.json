@@ -1,5 +1,21 @@
 {
+  "dashboard": {
+    "greeting": "Welcome back, {{name}}",
+    "subtitle": "Here is an overview and quick access to your workspace.",
+    "clients": "Client Management",
+    "clientsDesc": "View and manage the directory of companies and clients.",
+    "contractors": "Contractors",
+    "contractorsDesc": "Manage and visualize the contractor catalog.",
+    "settings": "Settings & Branding",
+    "settingsDesc": "Customize the logo, colors, and company details.",
+    "users": "User Administration",
+    "usersDesc": "Invite and manage your team's access to the system.",
+    "import": "Bulk Import",
+    "importDesc": "Import multiple records from a CSV or Excel file.",
+    "quickActions": "Quick Actions"
+  },
   "nav": {
+    "home": "Home",
     "brandTag": "Toolbox",
     "users": "Users",
     "clients": "Clients",
@@ -7,10 +23,13 @@
     "docTypes": "Document types",
     "settings": "Settings",
     "collapse": "Collapse menu",
-    "expand": "Expand menu"
+    "expand": "Expand menu",
+    "directory": "Directory",
+    "admin": "Administration"
   },
   "auth": {
     "title": "Log in",
+    "subtitle": "Welcome back! Please enter your details.",
     "email": "Email",
     "password": "Password",
     "submit": "Log in",
@@ -26,6 +45,7 @@
     "restore": "Restore",
     "retry": "Retry",
     "search": "Search",
+    "close": "Close",
     "actions": "Actions",
     "active": "Active",
     "inactive": "Inactive",
@@ -34,7 +54,7 @@
     "notAssigned": "Unassigned"
   },
   "users": {
-    "eyebrow": "OurClients · Admin",
+    "eyebrow": "Clients · Admin",
     "title": "Users",
     "subtitleActive_one": "{{count}} active",
     "subtitleActive_other": "{{count}} active",
@@ -103,7 +123,7 @@
     "restored": "{{name}} restored"
   },
   "clients": {
-    "eyebrow": "OurClients · Clients",
+    "eyebrow": "Clients · Clients",
     "title": "Clients",
     "subtitle_one": "{{count}} accounting or payroll client",
     "subtitle_other": "{{count}} accounting or payroll clients",
@@ -148,7 +168,7 @@
     }
   },
   "contractors": {
-    "eyebrow": "OurClients · Contractors",
+    "eyebrow": "Clients · Contractors",
     "title": "Contractors",
     "subtitle": "People and companies. Those marked as clients can also have contractors.",
     "new": "+ New contractor",
@@ -172,7 +192,7 @@
     "deleteDescription": "This is a soft delete: it will disappear from clients and contractors, but you can restore it."
   },
   "docTypes": {
-    "eyebrow": "OurClients · Catalogs",
+    "eyebrow": "Clients · Catalogs",
     "title": "Document types",
     "subtitle": "SSN, FEI/EIN and other IDs used in contacts and entities.",
     "new": "+ New type",
@@ -245,9 +265,9 @@
     }
   },
   "import": {
-    "eyebrowClients": "OurClients · Bulk upload",
+    "eyebrowClients": "Clients · Bulk upload",
     "titleClients": "Import clients",
-    "eyebrowContractors": "OurClients · Bulk upload",
+    "eyebrowContractors": "Clients · Bulk upload",
     "titleContractors": "Import contractors",
     "subtitle": "1. Upload the CSV · 2. Review and fix in the table (use search) · 3. Process the upload.",
     "fileLabel": "CSV or Excel file",
@@ -271,10 +291,14 @@
     "statErrors": "errors",
     "rowLabel": "Row {{row}}",
     "bulkClients": "Bulk upload",
-    "bulkContractors": "Upload contractors"
+    "bulkContractors": "Upload contractors",
+    "helpTitle": "File format",
+    "helpDesc": "Your file must contain the following headers (extra columns will be ignored). You can also download a sample:",
+    "downloadTemplate": "Download CSV template",
+    "close": "Close"
   },
   "settings": {
-    "eyebrow": "OurClients · Settings",
+    "eyebrow": "Clients · Settings",
     "title": "Company data",
     "subtitle": "Customize the logo, name and data shown in the application.",
     "companyName": "Company name *",
@@ -290,7 +314,11 @@
     "sidebarColor": "Menu color",
     "save": "Save changes",
     "reset": "Reset",
-    "saved": "Data saved"
+    "saved": "Settings saved",
+    "addEmail": "Add email",
+    "addPhone": "Add phone",
+    "addAddress": "Add address",
+    "default": "Default"
   },
   "errors": {
     "user": {
@@ -336,5 +364,20 @@
     "label": "Language",
     "spanish": "Español",
     "english": "English"
+  },
+  "profile": {
+    "eyebrow": "Clients · My Profile",
+    "title": "My Profile",
+    "subtitle": "Update your name, email address, or password.",
+    "name": "Name *",
+    "email": "Email *",
+    "newPassword": "New password",
+    "newPasswordPlaceholder": "Leave blank to keep current",
+    "confirmPassword": "Confirm password",
+    "confirmPasswordPlaceholder": "Repeat the new password",
+    "passwordHint": "Change your password (optional). Minimum 6 characters.",
+    "passwordMismatch": "Passwords do not match",
+    "saved": "Profile updated successfully",
+    "noChanges": "No changes to save"
   }
 }

@@ -76,7 +76,7 @@ export function UserForm({ initialUser, saving, formError, onSubmit, onCancel }:
         <span>{t('form.email')}</span>
         <input
           type="email"
-          placeholder="ana@w9.com"
+          placeholder="ana@clients.com"
           value={form.email}
           onChange={(e) => setField('email', e.target.value)}
           aria-invalid={Boolean(errors.email)}

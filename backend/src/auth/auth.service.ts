@@ -1,9 +1,10 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
-import { Role } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { LoginDto } from './dto/login.dto.js';
+import { UpdateProfileDto } from './dto/update-profile.dto.js';
 
 export interface AuthUser {
   id: number;
@@ -11,6 +12,15 @@ export interface AuthUser {
   name: string;
   role: Role;
 }
+
+const profileSelect = {
+  id: true,
+  email: true,
+  name: true,
+  role: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.UserSelect;
 
 @Injectable()
 export class AuthService {
@@ -38,4 +48,41 @@ export class AuthService {
     });
     return { accessToken, user };
   }
+
+  async getProfile(userId: number) {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, deletedAt: null },
+      select: profileSelect,
+    });
+    if (!user) throw new NotFoundException('user.notFound');
+    return user;
+  }
+
+  async updateProfile(userId: number, dto: UpdateProfileDto) {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, deletedAt: null },
+    });
+    if (!user) throw new NotFoundException('user.notFound');
+
+    if (dto.email && dto.email !== user.email) {
+      const emailTaken = await this.prisma.user.findFirst({
+        where: { email: dto.email, NOT: { id: userId }, deletedAt: null },
+      });
+      if (emailTaken) throw new ConflictException('user.emailInUse');
+    }
+
+    const data: Prisma.UserUpdateInput = {};
+    if (dto.name) data.name = dto.name;
+    if (dto.email) data.email = dto.email;
+    if (dto.password) data.password = await bcrypt.hash(dto.password, 10);
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data,
+      select: profileSelect,
+    });
+
+    return updated;
+  }
 }
+

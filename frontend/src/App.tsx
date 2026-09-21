@@ -1,5 +1,5 @@
 import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useParams } from 'react-router-dom';
-import { useState, type JSX } from 'react';
+import { useState, useRef, type JSX } from 'react';
 import {
   Building2,
   FileText,
@@ -9,6 +9,11 @@ import {
   PanelLeftOpen,
   Settings as SettingsIcon,
   Users as UsersIcon,
+  Folder,
+  ChevronDown,
+  ChevronRight,
+  Home,
+  User,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { AuthProvider, useAuth } from './auth/AuthContext';
@@ -23,6 +28,8 @@ import { ClientContractorsImportPage } from './pages/ClientContractorsImportPage
 import { ContractorsPage } from './pages/ContractorsPage';
 import { DocumentTypesPage } from './pages/DocumentTypesPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { ProfilePage } from './pages/ProfilePage';
 
 function ClientDetailRoute() {
   const { id } = useParams<{ id: string }>();
@@ -48,28 +55,63 @@ export function Shell() {
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('oc-sidebar') === 'collapsed');
   // Evita que el flyout se abra solo justo al recoger (el mouse sigue encima)
   const [flyoutLock, setFlyoutLock] = useState(false);
+  // Timer para evitar que el hover trigger abra el panel si se pasa muy rápido (o justo después de colapsar)
+  const hoverTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Control de submenús abiertos por defecto
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
   function toggleSidebar() {
     const next = !collapsed;
     setCollapsed(next);
     localStorage.setItem('oc-sidebar', next ? 'collapsed' : 'expanded');
-    if (next) setFlyoutLock(true);
+    setFlyoutLock(false);
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
   }
 
-  const links = [
-    { to: '/clients', label: t('nav.clients'), icon: <Building2 size={20} /> },
-    { to: '/contractors', label: t('nav.contractors'), icon: <HardHat size={20} /> },
-    { to: '/document-types', label: t('nav.docTypes'), icon: <FileText size={20} /> },
+  function toggleGroup(key: string) {
+    setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  type NavItem = {
+    key: string;
+    to?: string;
+    label: string;
+    icon: React.ReactNode;
+    children?: NavItem[];
+  };
+
+  const navGroups: NavItem[] = [
+    { key: 'dashboard', to: '/', label: t('nav.home') || 'Home', icon: <Home size={20} /> },
+    {
+      key: 'directory',
+      label: t('nav.directory'),
+      icon: <Folder size={20} />,
+      children: [
+        { key: 'clients', to: '/clients', label: t('nav.clients'), icon: <Building2 size={20} /> },
+        { key: 'contractors', to: '/contractors', label: t('nav.contractors'), icon: <HardHat size={20} /> },
+      ],
+    },
     ...(isAdmin
-      ? [{ to: '/users', label: t('nav.users'), icon: <UsersIcon size={20} /> }]
+      ? [
+          {
+            key: 'admin',
+            label: t('nav.admin'),
+            icon: <Folder size={20} />,
+            children: [
+              { key: 'doctypes', to: '/document-types', label: t('nav.docTypes'), icon: <FileText size={20} /> },
+              { key: 'users', to: '/users', label: t('nav.users'), icon: <UsersIcon size={20} /> },
+            ],
+          },
+          { key: 'settings', to: '/settings', label: t('nav.settings'), icon: <SettingsIcon size={20} /> },
+        ]
       : []),
-    { to: '/settings', label: t('nav.settings'), icon: <SettingsIcon size={20} /> },
   ];
 
   return (
-    <div className={`layout${collapsed ? ' rail' : ''}${flyoutLock ? ' no-flyout' : ''}`}>
-      <aside className="sidebar" onMouseLeave={() => setFlyoutLock(false)}>
-        <div className="side-top">
+    <div className={`app-wrapper${collapsed ? ' rail' : ''}${flyoutLock ? ' no-flyout' : ''}`}>
+      <header className="global-header">
+        <div className="header-left">
           <button
             type="button"
             className="side-toggle"
@@ -94,42 +136,108 @@ export function Shell() {
             )}
           </Link>
         </div>
-        <nav className="side-nav" aria-label="Principal">
-          {links.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              title={link.label}
-              className={({ isActive }) => `side-link${isActive ? ' active' : ''}`}
-            >
-              <span className="side-icon" aria-hidden="true">
-                {link.icon}
-              </span>
-              <span className="side-label">{link.label}</span>
-            </NavLink>
-          ))}
-        </nav>
-        <div className="side-foot">
+        <div className="header-right">
           {user && (
-            <span className="user-chip" title={user.email}>
+            <Link to="/profile" className="user-chip" title={user.email}>
+              <User size={16} />
               {user.name} · {user.role}
-            </span>
+            </Link>
           )}
           {user && (
-            <button type="button" className="btn small side-btn" onClick={logout} title={t('auth.logout')}>
+            <button type="button" className="btn small ghost" onClick={logout} title={t('auth.logout')}>
               <span className="side-icon" aria-hidden="true">
                 <LogOut size={16} />
               </span>
-              <span className="side-label">{t('auth.logout')}</span>
             </button>
           )}
           <LanguageSwitcher />
         </div>
-      </aside>
-      <div className="main">
+      </header>
+      <div className="layout">
+        {/* Zona invisible de hover para desplegar el overlay cuando está colapsado */}
+        {collapsed && (
+          <div 
+            className="sidebar-hover-trigger" 
+            onMouseEnter={() => {
+              hoverTimer.current = setTimeout(() => {
+                setFlyoutLock(true);
+              }, 300); // 300ms de retraso intencional
+            }}
+            onMouseLeave={() => {
+              if (hoverTimer.current) clearTimeout(hoverTimer.current);
+            }}
+          />
+        )}
+        
+        {/* Overlay background when flyout is open to capture clicks outside */}
+        {collapsed && flyoutLock && (
+          <div className="sidebar-backdrop" onClick={() => setFlyoutLock(false)} />
+        )}
+
+        <aside 
+          className={`sidebar${flyoutLock ? ' flyout-open' : ''}`} 
+          onMouseLeave={() => setFlyoutLock(false)}
+        >
+          <nav className="side-nav" aria-label="Principal">
+            {navGroups.map((group) => {
+              if (group.children) {
+                const isOpen = openGroups[group.key];
+                return (
+                  <div key={group.key} className="nav-group">
+                    <button 
+                      className="side-link group-toggle" 
+                      onClick={() => toggleGroup(group.key)}
+                      aria-expanded={isOpen}
+                    >
+                      <span className="side-icon" aria-hidden="true">{group.icon}</span>
+                      <span className="side-label">{group.label}</span>
+                      <span className="side-chevron">
+                        {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                      </span>
+                    </button>
+                    {isOpen && (
+                      <div className="group-children">
+                        {group.children.map((child) => (
+                          <NavLink
+                            key={child.key}
+                            to={child.to!}
+                            title={child.label}
+                            className={({ isActive }) => `side-link sub-link${isActive ? ' active' : ''}`}
+                            onClick={() => {
+                              if (collapsed) setFlyoutLock(false);
+                            }}
+                          >
+                            <span className="side-icon" aria-hidden="true">{child.icon}</span>
+                            <span className="side-label">{child.label}</span>
+                          </NavLink>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              
+              return (
+                <NavLink
+                  key={group.key}
+                  to={group.to!}
+                  title={group.label}
+                  className={({ isActive }) => `side-link${isActive ? ' active' : ''}`}
+                  onClick={() => {
+                    if (collapsed) setFlyoutLock(false);
+                  }}
+                >
+                  <span className="side-icon" aria-hidden="true">{group.icon}</span>
+                  <span className="side-label">{group.label}</span>
+                </NavLink>
+              );
+            })}
+          </nav>
+        </aside>
+        <div className="main">
         <main className="container wide">
           <Routes>
-          <Route path="/" element={<Protected><ClientsPage /></Protected>} />
+          <Route path="/" element={<Protected><DashboardPage /></Protected>} />
           <Route path="/clients" element={<Protected><ClientsPage /></Protected>} />
           <Route path="/clients/import" element={<Protected><ClientsImportPage /></Protected>} />
           <Route path="/clients/:id" element={<Protected><ClientDetailRoute /></Protected>} />
@@ -138,9 +246,10 @@ export function Shell() {
             element={<Protected><ClientContractorsImportRoute /></Protected>}
           />
           <Route path="/contractors" element={<Protected><ContractorsPage /></Protected>} />
-          <Route path="/document-types" element={<Protected><DocumentTypesPage /></Protected>} />
+          <Route path="/profile" element={<Protected><ProfilePage /></Protected>} />
+          <Route path="/document-types" element={<Protected adminOnly><DocumentTypesPage /></Protected>} />
           <Route path="/users" element={<Protected adminOnly><UsersPage /></Protected>} />
-          <Route path="/settings" element={<Protected><SettingsPage /></Protected>} />
+          <Route path="/settings" element={<Protected adminOnly><SettingsPage /></Protected>} />
           <Route
             path="*"
             element={
@@ -154,15 +263,24 @@ export function Shell() {
           />
         </Routes>
         </main>
-        {(branding.email || branding.phone || branding.address) && (
-          <footer className="footer">
-            <span className="muted">
-              {[branding.companyName, branding.email, branding.phone, branding.address]
-                .filter(Boolean)
-                .join(' · ')}
-            </span>
-          </footer>
-        )}
+        {(() => {
+          const primaryEmail = branding.emails?.find((e) => e.isPrimary)?.value ?? branding.emails?.[0]?.value;
+          const primaryPhone = branding.phones?.find((e) => e.isPrimary)?.value ?? branding.phones?.[0]?.value;
+          const primaryAddress = branding.addresses?.find((e) => e.isPrimary)?.value ?? branding.addresses?.[0]?.value;
+
+          if (!primaryEmail && !primaryPhone && !primaryAddress) return null;
+
+          return (
+            <footer className="footer">
+              <span className="muted">
+                {[branding.companyName, primaryEmail, primaryPhone, primaryAddress]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </span>
+            </footer>
+          );
+        })()}
+      </div>
       </div>
     </div>
   );

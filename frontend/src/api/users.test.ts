@@ -35,7 +35,7 @@ describe('users api', () => {
 
   it('createUser hace POST', async () => {
     mocked.post.mockResolvedValue({ data: { id: 1 } });
-    const input = { email: 'a@w9.com', name: 'Ana', password: '123456' };
+    const input = { email: 'a@clients.com', name: 'Ana', password: '123456' };
     await createUser(input);
     expect(mocked.post).toHaveBeenCalledWith('/users', input);
   });

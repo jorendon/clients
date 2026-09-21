@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Pencil, Trash2, RotateCcw } from 'lucide-react';
 import {
   createDocumentType,
   deleteDocumentType,
@@ -9,6 +10,7 @@ import {
 } from '../api/documentTypes';
 import type { DocumentType, DocumentTypeInput } from '../types/party';
 import { getApiErrorMessage } from '../utils/apiErrors';
+import { useSortableTable } from '../hooks/useSortableTable';
 
 type Toast = { kind: 'success' | 'error'; message: string } | null;
 
@@ -23,6 +25,11 @@ export function DocumentTypesPage() {
   const [editing, setEditing] = useState<DocumentType | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
   const [toast, setToast] = useState<Toast>(null);
+
+  const { items: sortedItems, requestSort, getSortIndicator } = useSortableTable(items, { key: 'code', direction: 'asc' }, (item, key) => {
+    if (key === 'status') return Boolean(item.deletedAt) ? 1 : 0;
+    return item[key as keyof DocumentType];
+  });
   const [form, setForm] = useState<DocumentTypeInput>({ code: '', name: '', description: '', isActive: true });
 
   async function load() {
@@ -158,15 +165,23 @@ export function DocumentTypesPage() {
           <table className="table">
             <thead>
               <tr>
-                <th>{t('docTypes.colCode')}</th>
-                <th>{t('docTypes.colName')}</th>
-                <th>{t('docTypes.colDescription')}</th>
-                <th>{t('docTypes.colStatus')}</th>
+                <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('code')}>
+                  {t('docTypes.colCode')}{getSortIndicator('code')}
+                </th>
+                <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('name')}>
+                  {t('docTypes.colName')}{getSortIndicator('name')}
+                </th>
+                <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('description')}>
+                  {t('docTypes.colDescription')}{getSortIndicator('description')}
+                </th>
+                <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('status')}>
+                  {t('docTypes.colStatus')}{getSortIndicator('status')}
+                </th>
                 <th className="actions-col">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
-              {items.map((item) => (
+              {sortedItems.map((item) => (
                 <tr key={item.id} className={item.deletedAt ? 'deleted' : undefined}>
                   <td className="strong mono">{item.code}</td>
                   <td>{item.name}</td>
@@ -183,16 +198,31 @@ export function DocumentTypesPage() {
                   <td className="actions">
                     {!item.deletedAt ? (
                       <>
-                        <button type="button" className="btn small" onClick={() => openEdit(item)}>
-                          {t('common.edit')}
+                        <button 
+                          type="button" 
+                          className="btn small icon-only" 
+                          onClick={() => openEdit(item)}
+                          title={t('common.edit')}
+                        >
+                          <Pencil size={16} />
                         </button>
-                        <button type="button" className="btn small danger-outline" onClick={() => handleDelete(item)}>
-                          {t('common.delete')}
+                        <button 
+                          type="button" 
+                          className="btn small danger-outline icon-only" 
+                          onClick={() => handleDelete(item)}
+                          title={t('common.delete')}
+                        >
+                          <Trash2 size={16} />
                         </button>
                       </>
                     ) : (
-                      <button type="button" className="btn small primary" onClick={() => handleRestore(item)}>
-                        {t('common.restore')}
+                      <button 
+                        type="button" 
+                        className="btn small primary icon-only" 
+                        onClick={() => handleRestore(item)}
+                        title={t('common.restore')}
+                      >
+                        <RotateCcw size={16} />
                       </button>
                     )}
                   </td>

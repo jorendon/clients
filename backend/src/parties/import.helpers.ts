@@ -9,7 +9,7 @@ export interface ImportContractorRow {
   city?: string;
   state?: string;
   zip?: string;
-  /** Columna combinada "CIUDAD, ST ZIP" como la del Excel de W9s */
+  /** Columna combinada "CIUDAD, ST ZIP" como la del Excel de Clients */
   cityStateZip?: string;
   idType?: string;
   id?: string;

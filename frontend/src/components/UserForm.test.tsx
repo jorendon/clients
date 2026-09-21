@@ -28,12 +28,12 @@ describe('UserForm', () => {
     );
 
     await user.type(screen.getByPlaceholderText(/ana torres/i), 'Ana Torres');
-    await user.type(screen.getByPlaceholderText('ana@w9.com'), 'ana@w9.com');
+    await user.type(screen.getByPlaceholderText('ana@clients.com'), 'ana@clients.com');
     await user.type(screen.getByPlaceholderText('••••••'), 'secreto123');
     await user.click(screen.getByRole('button', { name: /crear usuario/i }));
 
     expect(onSubmit).toHaveBeenCalledWith({
-      email: 'ana@w9.com',
+      email: 'ana@clients.com',
       name: 'Ana Torres',
       password: 'secreto123',
       role: 'EMPLEADO',

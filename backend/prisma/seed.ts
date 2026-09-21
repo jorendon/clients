@@ -85,13 +85,13 @@ async function main() {
     {
       email: 'jonathan.rendon@gmail.com',
       name: 'Jonathan Rendon',
-      password: 'OurClients#Adm2026!',
+      password: 'Clients#Adm2026!',
       role: 'ADMIN' as const,
     },
     {
       email: 'michrotel@gmail.com',
       name: 'Empleado',
-      password: 'OurClients#Emp2026!',
+      password: 'Clients#Emp2026!',
       role: 'EMPLEADO' as const,
     },
   ];

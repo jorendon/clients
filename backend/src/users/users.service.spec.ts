@@ -11,7 +11,7 @@ describe('UsersService', () => {
 
   const safeUser = {
     id: 1,
-    email: 'ana@w9.com',
+    email: 'ana@clients.com',
     name: 'Ana',
     role: Role.EMPLEADO,
     deletedAt: null,
@@ -44,12 +44,12 @@ describe('UsersService', () => {
     prismaUser.create.mockResolvedValue(safeUser);
 
     const result = await service.create({
-      email: 'ana@w9.com',
+      email: 'ana@clients.com',
       name: 'Ana',
       password: 'secreto123',
     });
 
-    expect(result.email).toBe('ana@w9.com');
+    expect(result.email).toBe('ana@clients.com');
     expect(prismaUser.create).toHaveBeenCalledOnce();
     const payload = prismaUser.create.mock.calls[0][0];
     expect(payload.data.password).not.toBe('secreto123');
@@ -59,7 +59,7 @@ describe('UsersService', () => {
   it('create: lanza conflicto si el email ya existe activo', async () => {
     prismaUser.findUnique.mockResolvedValue(safeUser);
     await expect(
-      service.create({ email: 'ana@w9.com', name: 'Ana', password: 'secreto123' }),
+      service.create({ email: 'ana@clients.com', name: 'Ana', password: 'secreto123' }),
     ).rejects.toThrow(ConflictException);
   });
 
@@ -68,7 +68,7 @@ describe('UsersService', () => {
     prismaUser.update.mockResolvedValue({ ...safeUser, deletedAt: null });
 
     const result = await service.create({
-      email: 'ana@w9.com',
+      email: 'ana@clients.com',
       name: 'Ana Nueva',
       password: 'secreto123',
     });
@@ -85,7 +85,7 @@ describe('UsersService', () => {
   it('update: lanza conflicto si el email está en uso por otro', async () => {
     prismaUser.findFirst.mockResolvedValueOnce(safeUser);
     prismaUser.findFirst.mockResolvedValueOnce({ ...safeUser, id: 2 });
-    await expect(service.update(1, { email: 'otro@w9.com' })).rejects.toThrow(
+    await expect(service.update(1, { email: 'otro@clients.com' })).rejects.toThrow(
       ConflictException,
     );
   });

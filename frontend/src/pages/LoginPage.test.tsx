@@ -37,7 +37,7 @@ describe('LoginPage branding', () => {
 
   it('muestra el logo configurado en grande', () => {
     localStorage.setItem(
-      'w9-branding',
+      'clients-branding',
       JSON.stringify({ companyName: 'Mi Empresa', logoUrl: 'https://x.test/logo.png' }),
     );
     renderLogin();
@@ -47,7 +47,7 @@ describe('LoginPage branding', () => {
   });
 
   it('vuelve a OC si el logo no carga', async () => {
-    localStorage.setItem('w9-branding', JSON.stringify({ logoUrl: 'https://x.test/roto.png' }));
+    localStorage.setItem('clients-branding', JSON.stringify({ logoUrl: 'https://x.test/roto.png' }));
     renderLogin();
     const img = screen.getByRole('img');
     // Simula fallo de carga
