@@ -54,7 +54,7 @@ function ImportReportView({ report }: { report: ImportReport }) {
       )}
       <div style={{ marginTop: '1.5rem' }}>
         <Link to={`/contractors`} className="btn primary">
-          Ir a contratistas de este cliente
+          {t('import.goToContractors', 'Ir a contratistas de este cliente')}
         </Link>
       </div>
     </div>
@@ -260,7 +260,7 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
   return (
     <div className="page">
       <Link to="/contractors" className="back-link">
-        ← Volver a contratistas
+        {t('import.backToContractors', '← Volver a contratistas')}
       </Link>
       <header className="page-header">
         <div>
@@ -320,15 +320,15 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
       </section>
 
       {duplicateConflicts && !report && (
-        <section className="card form">
-          <h2>Revisión de Duplicados</h2>
-          <p className="muted">Hemos encontrado nombres similares en tu base de datos. Por favor elige si deseas crear uno nuevo o asociar al existente.</p>
+        <section className="card">
+          <h2>{t('import.duplicatesTitle', 'Revisión de Duplicados')}</h2>
+          <p className="muted">{t('import.duplicatesSubtitle', 'Hemos encontrado nombres similares en tu base de datos. Por favor elige si deseas crear uno nuevo o asociar al existente.')}</p>
           <div className="table-wrap" style={{ marginTop: '1rem' }}>
             <table className="table">
               <thead>
                 <tr>
-                  <th>Nombre a Importar</th>
-                  <th>Acción</th>
+                  <th>{t('import.colNameImport', 'Nombre a Importar')}</th>
+                  <th>{t('import.colAction', 'Acción')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -343,10 +343,10 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
                           setResolutions(prev => ({ ...prev, [conflict.name]: val }));
                         }}
                       >
-                        <option value="new">Crear como nuevo (Incompleto)</option>
+                        <option value="new">{t('import.actionNew', 'Crear como nuevo (Incompleto)')}</option>
                         {conflict.matches.map(m => (
                           <option key={m.id} value={m.id}>
-                            Vincular con: {m.fullName} {m.documentNumber ? `(${m.documentNumber})` : ''}
+                            {t('import.actionLink', 'Vincular con:')} {m.fullName} {m.documentNumber ? `(${m.documentNumber})` : ''}
                           </option>
                         ))}
                       </select>
@@ -366,7 +366,7 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
               disabled={processing}
               onClick={handleExecuteResolved}
             >
-              {processing ? t('common.saving') : 'Confirmar e Importar'}
+              {processing ? t('common.saving') : t('import.confirmAndImport', 'Confirmar e Importar')}
             </button>
           </div>
         </section>

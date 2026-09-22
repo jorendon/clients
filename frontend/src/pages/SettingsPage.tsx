@@ -127,7 +127,7 @@ export function SettingsPage() {
         <div className="grid-wide-left">
           {/* Columna Izquierda: Identidad y Contacto */}
           <div className="card form" style={{ width: '100%' }}>
-            <h2 style={{ margin: '0 0 1.5rem', fontSize: '1.25rem' }}>Identidad y Contacto</h2>
+            <h2 style={{ margin: '0 0 1.5rem', fontSize: '1.25rem' }}>{t('settings.identityContact', 'Identidad y Contacto')}</h2>
             <label className="field">
               <span>{t('settings.companyName')}</span>
               <input type="text" value={form.companyName} onChange={(e) => set('companyName', e.target.value)} autoFocus />
@@ -143,7 +143,7 @@ export function SettingsPage() {
 
           {/* Columna Derecha: Branding Visual */}
           <div className="card form" style={{ width: '100%' }}>
-            <h2 style={{ margin: '0 0 1.5rem', fontSize: '1.25rem' }}>Branding Visual</h2>
+            <h2 style={{ margin: '0 0 1.5rem', fontSize: '1.25rem' }}>{t('settings.brandingVisual', 'Branding Visual')}</h2>
             <label className="field">
               <span>{t('settings.logoUrl')}</span>
               <input

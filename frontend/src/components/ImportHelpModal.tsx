@@ -77,7 +77,7 @@ export function ImportHelpModal({ isOpen, onClose, mode }: ImportHelpModalProps)
             <p>
               {t('import.helpDesc')}
               <br /><br />
-              <strong>Nota sobre Tipo de Identificación (ID Type):</strong> Debes colocar el código o nombre exacto configurado en el sistema (ej. <code>FEI_EIN</code>, <code>FEI/EIN</code>, <code>SSN</code>, <code>ITIN</code>).
+              <strong>{t('import.idTypeNoteTitle', 'Nota sobre Tipo de Identificación (ID Type):')}</strong> {t('import.idTypeNoteDesc', 'Debes colocar el código o nombre exacto configurado en el sistema (ej. FEI_EIN, FEI/EIN, SSN, ITIN).')}
             </p>
           )}
           
