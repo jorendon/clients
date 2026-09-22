@@ -1,38 +1,52 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pencil } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import {
-  associateContractor,
   dissociateContractor,
   fetchClientContractors,
 } from '../api/clients';
-import { fetchContractors } from '../api/contractors';
-import type { Party, PartyContractor } from '../types/party';
+import { updateContractor } from '../api/contractors';
+import { fetchDocumentTypes } from '../api/documentTypes';
+import type { DocumentType, PartyContractor, PartyInput } from '../types/party';
 import { getApiErrorMessage } from '../utils/apiErrors';
 import { useSortableTable } from '../hooks/useSortableTable';
+import { Edit2, Unlink, Download, Upload } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import Papa from 'papaparse';
 import { PartyDetailModal } from './PartyDetailModal';
+import { PartyForm } from './PartyForm';
 
 export function ClientContractorsSection({ clientId }: { clientId: number }) {
   const { t } = useTranslation();
   const [contractors, setContractors] = useState<PartyContractor[]>([]);
+  const [docTypes, setDocTypes] = useState<DocumentType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [results, setResults] = useState<Party[]>([]);
-  const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [localSearch, setLocalSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'COMPLETE' | 'INCOMPLETE'>('ALL');
   const [viewingParty, setViewingParty] = useState<PartyContractor | null>(null);
+  const [editingParty, setEditingParty] = useState<PartyContractor | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [contractorToDissociate, setContractorToDissociate] = useState<PartyContractor | null>(null);
 
   const { items: sortedContractors, requestSort, getSortIndicator } = useSortableTable(
-    contractors.filter(c => localSearch ? (c.fullName.toLowerCase().includes(localSearch.toLowerCase()) || (c.documentNumber && c.documentNumber.includes(localSearch))) : true),
+    contractors.filter(c => {
+      const matchSearch = localSearch ? (c.fullName.toLowerCase().includes(localSearch.toLowerCase()) || (c.documentNumber && c.documentNumber.includes(localSearch))) : true;
+      const matchStatus = statusFilter === 'ALL' ? true : (statusFilter === 'COMPLETE' ? c.isComplete : !c.isComplete);
+      return matchSearch && matchStatus;
+    }),
     { key: 'fullName', direction: 'asc' }
   );
 
   async function load() {
     setLoading(true);
     try {
-      setContractors(await fetchClientContractors(clientId));
+      const [contractorsData, docTypesData] = await Promise.all([
+        fetchClientContractors(clientId),
+        fetchDocumentTypes()
+      ]);
+      setContractors(contractorsData);
+      setDocTypes(docTypesData);
     } catch (err) {
       setError(getApiErrorMessage(t, err));
     } finally {
@@ -45,94 +59,63 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
 
-  useEffect(() => {
-    const term = search.trim();
-    if (term.length < 2) {
-      setResults([]);
-      return;
-    }
-    setSearching(true);
-    const timer = setTimeout(async () => {
-      try {
-        const found = await fetchContractors({ search: term });
-        setResults(found.filter((p) => p.id !== clientId));
-      } catch {
-        setResults([]);
-      } finally {
-        setSearching(false);
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [search, clientId]);
-
-  async function handleAssociate(contractorId: number) {
+  async function handleDissociateConfirm() {
+    if (!contractorToDissociate) return;
     setError(null);
     try {
-      const updated = await associateContractor(clientId, contractorId);
-      setContractors(updated);
-      setSearch('');
-      setResults([]);
+      setContractors(await dissociateContractor(clientId, contractorToDissociate.id));
+      setContractorToDissociate(null);
     } catch (err) {
       setError(getApiErrorMessage(t, err));
     }
   }
 
-  async function handleDissociate(contractorId: number) {
-    setError(null);
+  async function handleUpdateContractor(input: PartyInput) {
+    if (!editingParty) return;
+    setSaving(true);
+    setFormError(null);
     try {
-      setContractors(await dissociateContractor(clientId, contractorId));
+      const updated = await updateContractor(editingParty.id, input);
+      setContractors(prev => prev.map(c => c.id === updated.id ? updated as PartyContractor : c));
+      setEditingParty(null);
     } catch (err) {
-      setError(getApiErrorMessage(t, err));
+      setFormError(getApiErrorMessage(t, err));
+    } finally {
+      setSaving(false);
     }
   }
 
-  const associatedIds = new Set(contractors.map((c) => c.id));
+  function handleExport() {
+    const data = sortedContractors.map(c => ({
+      Nombre: c.fullName,
+      Tipo: c.kind === 'COMPANY' ? 'Empresa' : 'Persona',
+      TipoDocumento: c.documentType?.code || '',
+      NumeroDocumento: c.documentNumber || '',
+      Email: c.email || '',
+      Telefono: c.phone || '',
+      Estado: c.isComplete ? 'Completo' : 'Incompleto'
+    }));
+    const csv = Papa.unparse(data);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `contratistas_${statusFilter.toLowerCase()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <section className="card">
-      <h2>
-        {t('clients.detail.contractors')} ({contractors.length})
-      </h2>
-
-      <div className="field">
-        <input
-          type="search"
-          placeholder={t('clients.detail.associatePlaceholder')}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          aria-label={t('clients.detail.associate')}
-        />
-        <small className="muted">{t('clients.detail.associateHint')}</small>
-      </div>
-
-      {searching && <p className="muted">{t('table.loading')}</p>}
-      {results.length > 0 && (
-        <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-          <ul className="list picker">
-            {results.map((party) => (
-              <li key={party.id}>
-                <span>
-                  <strong>{party.fullName}</strong>
-                  <br />
-                  <span className="muted">
-                    {party.kind === 'COMPANY' ? t('clients.kindCompany') : t('clients.kindPerson')}
-                    {party.documentNumber ? ` · ${party.documentNumber}` : ''}
-                    {party.isClient ? ` · ${t('contractors.isClientBadge')}` : ''}
-                  </span>
-                </span>
-                <button
-                  type="button"
-                  className="btn small primary"
-                  disabled={associatedIds.has(party.id)}
-                  onClick={() => handleAssociate(party.id)}
-                >
-                  {t('clients.detail.associate')}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <header className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <h2 style={{ margin: 0 }}>
+          {t('clients.detail.contractors')} ({contractors.length})
+        </h2>
+        <Link to={`/clients/${clientId}/contractors/import`} className="btn secondary small">
+          <span className="side-icon" aria-hidden="true" style={{ marginRight: '0.5rem' }}><Upload size={16} /></span>
+          {t('clients.detail.importContractors', 'Carga Masiva')}
+        </Link>
+      </header>
 
       {error && (
         <p className="error" role="alert">
@@ -148,14 +131,27 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
         <p className="muted" style={{ marginTop: '2rem' }}>{t('clients.detail.noContractors')}</p>
       ) : (
         <>
-          <div className="field" style={{ marginBottom: '1rem', marginTop: '2rem' }}>
+          <div className="toolbar" style={{ marginBottom: '1rem', marginTop: '2rem' }}>
             <input
               type="search"
-              placeholder={t('clients.searchPlaceholder')}
+              placeholder={t('clients.detail.filterPlaceholder')}
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
-              aria-label={t('clients.searchLabel')}
+              aria-label={t('clients.detail.filterPlaceholder')}
             />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              style={{ width: 'auto', minWidth: '160px' }}
+            >
+              <option value="ALL">Todos los estados</option>
+              <option value="COMPLETE">Completos</option>
+              <option value="INCOMPLETE">Incompletos</option>
+            </select>
+            <button type="button" className="btn ghost" onClick={handleExport} title="Exportar a CSV" style={{ display: 'inline-flex', gap: '0.4rem', alignItems: 'center' }}>
+              <Download size={16} />
+              Exportar
+            </button>
           </div>
           <div className="table-wrap" style={{ maxHeight: '400px', overflowY: 'auto' }}>
             <table className="table">
@@ -170,7 +166,7 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
                   <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('documentNumber')}>
                     {t('contractors.colId')}{getSortIndicator('documentNumber')}
                   </th>
-                  <th className="actions-col">{t('common.actions')}</th>
+                  <th className="actions-col" style={{ textAlign: 'center' }}>{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -181,6 +177,11 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
                       {contractor.isClient && (
                         <span className="badge admin">{t('contractors.isClientBadge')}</span>
                       )}
+                      {contractor.isComplete ? (
+                        <span className="badge ok" style={{ marginLeft: '4px' }}>Completo</span>
+                      ) : (
+                        <span className="badge warning" style={{ marginLeft: '4px' }}>Incompleto</span>
+                      )}
                     </td>
                     <td className="muted">
                       {contractor.kind === 'COMPANY' ? t('clients.kindCompany') : t('clients.kindPerson')}
@@ -189,16 +190,26 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
                       {contractor.documentNumber ?? ''}
                     </td>
                     <td className="actions" onClick={(e) => e.stopPropagation()}>
-                      <Link to={`/contractors`} state={{ edit: contractor.id }} className="btn small icon-only ghost" title={t('common.edit')}>
-                        <Pencil size={16} />
-                      </Link>
-                      <button
-                        type="button"
-                        className="btn small danger-outline"
-                        onClick={() => handleDissociate(contractor.id)}
-                      >
-                        {t('clients.detail.dissociate')}
-                      </button>
+                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                        <button
+                          type="button"
+                          className="btn small ghost icon-only"
+                          onClick={() => setEditingParty(contractor)}
+                          data-tooltip={t('common.edit')}
+                          aria-label={t('common.edit')}
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn small danger-outline icon-only"
+                          onClick={() => setContractorToDissociate(contractor)}
+                          data-tooltip={t('clients.detail.dissociate')}
+                          aria-label={t('clients.detail.dissociate')}
+                        >
+                          <Unlink size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -210,6 +221,44 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
 
       {viewingParty && (
         <PartyDetailModal party={viewingParty} onClose={() => setViewingParty(null)} />
+      )}
+      
+      {editingParty && (
+        <div className="drawer-overlay" role="dialog" aria-modal="true" onClick={() => setEditingParty(null)}>
+          <div className="drawer-content" onClick={(e) => e.stopPropagation()}>
+            <PartyForm
+              initialParty={editingParty}
+              documentTypes={docTypes}
+              saving={saving}
+              formError={formError}
+              submitLabel={t('party.saveContractor')}
+              title={t('party.editContractorTitle')}
+              onSubmit={handleUpdateContractor}
+              onCancel={() => setEditingParty(null)}
+            />
+          </div>
+        </div>
+      )}
+
+      {contractorToDissociate && (
+        <div className="overlay" role="alertdialog" aria-modal="true" aria-label={t('clients.detail.confirmDissociateTitle', 'Quitar contratista')}>
+          <div className="card" style={{ maxWidth: '400px' }}>
+            <h2 style={{ marginTop: 0 }}>
+              {t('clients.detail.confirmDissociateTitle', 'Quitar contratista')}
+            </h2>
+            <p className="muted" style={{ marginBottom: '1.5rem' }}>
+              {t('clients.detail.confirmDissociate', `¿Estás seguro de que deseas quitar a ${contractorToDissociate.fullName} de este cliente?`)}
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button type="button" className="btn ghost" onClick={() => setContractorToDissociate(null)}>
+                {t('common.cancel', 'Cancelar')}
+              </button>
+              <button type="button" className="btn danger" onClick={handleDissociateConfirm}>
+                {t('clients.detail.dissociate', 'Quitar')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </section>
   );

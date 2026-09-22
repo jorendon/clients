@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { HelpCircle } from 'lucide-react';
-import { importClientContractors, type ImportReport } from '../api/import';
+import { checkContractorDuplicates, importClientContractors, type ImportReport, type DuplicateResult } from '../api/import';
 import { ImportStagingTable, type StagingColumn } from '../components/ImportStagingTable';
 import { ImportHelpModal } from '../components/ImportHelpModal';
 import { getApiErrorMessage, translateBackendMessage } from '../utils/apiErrors';
@@ -16,7 +16,7 @@ import {
   type StagedContractorRow,
 } from '../utils/csvImport';
 
-function ImportReportView({ report, clientId }: { report: ImportReport; clientId: number }) {
+function ImportReportView({ report }: { report: ImportReport }) {
   const { t } = useTranslation();
   return (
     <div className="card">
@@ -53,7 +53,7 @@ function ImportReportView({ report, clientId }: { report: ImportReport; clientId
         </ul>
       )}
       <div style={{ marginTop: '1.5rem' }}>
-        <Link to={`/clients/${clientId}?tab=contractors`} className="btn primary">
+        <Link to={`/contractors`} className="btn primary">
           Ir a contratistas de este cliente
         </Link>
       </div>
@@ -72,6 +72,10 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
   const [report, setReport] = useState<ImportReport | null>(null);
   const [docTypes, setDocTypes] = useState<DocumentType[]>([]);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [uploadType, setUploadType] = useState<'full' | 'names'>('full');
+  
+  const [duplicateConflicts, setDuplicateConflicts] = useState<DuplicateResult[] | null>(null);
+  const [resolutions, setResolutions] = useState<Record<string, number | 'new'>>({});
 
   useEffect(() => {
     fetchDocumentTypes().then(setDocTypes).catch(console.error);
@@ -103,6 +107,13 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
     ],
     [t, docTypes],
   );
+
+  const activeColumns = useMemo(() => {
+    if (uploadType === 'names') {
+      return columns.filter(c => c.key === 'name');
+    }
+    return columns;
+  }, [columns, uploadType]);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -197,18 +208,59 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
     setProcessing(true);
     setProcessError(null);
     try {
-      setReport(await importClientContractors(clientId, rows));
+      if (uploadType === 'names') {
+        const names = rows.map((r) => r.name);
+        const results = await checkContractorDuplicates(clientId, names);
+        const withMatches = results.filter((r) => r.matches.length > 0);
+        
+        if (withMatches.length > 0) {
+          setDuplicateConflicts(withMatches);
+          // Pre-fill resolutions with 'new' or first match? Let's just require explicit or default to 'new'
+          const initialRes: Record<string, number | 'new'> = {};
+          for (const conflict of withMatches) {
+            initialRes[conflict.name] = 'new';
+          }
+          setResolutions(initialRes);
+          setProcessing(false);
+          return; // Wait for user resolution
+        }
+      }
+      
+      await executeImport(rows);
     } catch (error) {
       setProcessError(getApiErrorMessage(t, error));
-    } finally {
       setProcessing(false);
     }
   }
 
+  async function handleExecuteResolved() {
+    const finalRows = rows.map((row) => {
+      const res = resolutions[row.name];
+      if (res && res !== 'new') {
+        return { ...row, mergeId: res };
+      }
+      return row;
+    });
+    setProcessing(true);
+    setProcessError(null);
+    try {
+      await executeImport(finalRows);
+      setDuplicateConflicts(null);
+    } catch (error) {
+      setProcessError(getApiErrorMessage(t, error));
+      setProcessing(false);
+    }
+  }
+
+  async function executeImport(finalRows: StagedContractorRow[]) {
+    setReport(await importClientContractors(clientId, finalRows));
+    setProcessing(false);
+  }
+
   return (
     <div className="page">
-      <Link to={`/clients/${clientId}`} className="back-link">
-        ← {t('clients.detail.back')}
+      <Link to="/contractors" className="back-link">
+        ← Volver a contratistas
       </Link>
       <header className="page-header">
         <div>
@@ -231,6 +283,29 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
       </header>
 
       <section className="card form">
+        <div className="field-group" style={{ marginBottom: '1.5rem', display: 'flex', gap: '1.5rem' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+            <input 
+              type="radio" 
+              name="uploadType" 
+              value="full" 
+              checked={uploadType === 'full'} 
+              onChange={() => setUploadType('full')} 
+            />
+            {t('import.uploadTypeFull', 'Carga Completa')}
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+            <input 
+              type="radio" 
+              name="uploadType" 
+              value="names" 
+              checked={uploadType === 'names'} 
+              onChange={() => setUploadType('names')} 
+            />
+            {t('import.uploadTypeNames', 'Solo Nombres')}
+          </label>
+        </div>
+
         <label className="field">
           <span>{t('import.fileLabel')}</span>
           <input type="file" accept=".csv,.xls,.xlsx" onChange={handleFile} />
@@ -244,12 +319,65 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
         )}
       </section>
 
-      {rows.length > 0 && !report && (
+      {duplicateConflicts && !report && (
+        <section className="card form">
+          <h2>Revisión de Duplicados</h2>
+          <p className="muted">Hemos encontrado nombres similares en tu base de datos. Por favor elige si deseas crear uno nuevo o asociar al existente.</p>
+          <div className="table-wrap" style={{ marginTop: '1rem' }}>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Nombre a Importar</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {duplicateConflicts.map((conflict) => (
+                  <tr key={conflict.name}>
+                    <td><strong>{conflict.name}</strong></td>
+                    <td>
+                      <select 
+                        value={resolutions[conflict.name] || 'new'}
+                        onChange={(e) => {
+                          const val = e.target.value === 'new' ? 'new' : Number(e.target.value);
+                          setResolutions(prev => ({ ...prev, [conflict.name]: val }));
+                        }}
+                      >
+                        <option value="new">Crear como nuevo (Incompleto)</option>
+                        {conflict.matches.map(m => (
+                          <option key={m.id} value={m.id}>
+                            Vincular con: {m.fullName} {m.documentNumber ? `(${m.documentNumber})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="form-actions sticky-bar" style={{ marginTop: '1rem' }}>
+            <button type="button" className="btn ghost" onClick={() => setDuplicateConflicts(null)}>
+              {t('common.cancel')}
+            </button>
+            <button
+              type="button"
+              className="btn primary"
+              disabled={processing}
+              onClick={handleExecuteResolved}
+            >
+              {processing ? t('common.saving') : 'Confirmar e Importar'}
+            </button>
+          </div>
+        </section>
+      )}
+
+      {rows.length > 0 && !report && !duplicateConflicts && (
         <>
           <ImportStagingTable
             rows={rows}
             filtered={filtered}
-            columns={columns}
+            columns={activeColumns}
             search={search}
             searchPlaceholder={t('import.searchPlaceholder')}
             getRowLabel={(row) => row.name}
@@ -277,12 +405,12 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
         </>
       )}
 
-      {report && <ImportReportView report={report} clientId={clientId} />}
+      {report && <ImportReportView report={report} />}
 
       <ImportHelpModal 
         isOpen={isHelpOpen} 
         onClose={() => setIsHelpOpen(false)} 
-        mode="contractor" 
+        mode={uploadType === 'names' ? 'contractor-names' : 'contractor'} 
       />
     </div>
   );

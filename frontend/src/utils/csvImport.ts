@@ -22,6 +22,7 @@ export interface StagedContractorRow {
   id: string;
   email: string;
   phone: string;
+  mergeId?: number;
 }
 
 export interface StagedClientRow {

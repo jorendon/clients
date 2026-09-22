@@ -1,9 +1,7 @@
 import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useParams } from 'react-router-dom';
 import { useState, useRef, type JSX } from 'react';
 import {
-  Building2,
   FileText,
-  HardHat,
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
@@ -14,18 +12,22 @@ import {
   ChevronRight,
   Home,
   User,
+  HardHat,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import { BrandingProvider, useBranding } from './branding/BrandingContext';
+import { ActiveClientProvider, useActiveClient } from './context/ActiveClientContext';
+import { ClientSelector } from './components/ClientSelector';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { UsersPage } from './pages/UsersPage';
 import { LoginPage } from './pages/LoginPage';
 import { ClientsPage } from './pages/ClientsPage';
+import { ContractorsPage } from './pages/ContractorsPage';
+import { ClientSettingsPage } from './pages/ClientSettingsPage';
 import { ClientDetailPage } from './pages/ClientDetailPage';
 import { ClientsImportPage } from './pages/ClientsImportPage';
 import { ClientContractorsImportPage } from './pages/ClientContractorsImportPage';
-import { ContractorsPage } from './pages/ContractorsPage';
 import { DocumentTypesPage } from './pages/DocumentTypesPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -52,6 +54,7 @@ export function Shell() {
   const { t } = useTranslation();
   const { branding } = useBranding();
   const { user, isAdmin, logout } = useAuth();
+  const { activeClientId } = useActiveClient();
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('oc-sidebar') === 'collapsed');
   // Evita que el flyout se abra solo justo al recoger (el mouse sigue encima)
   const [flyoutLock, setFlyoutLock] = useState(false);
@@ -88,8 +91,7 @@ export function Shell() {
       label: t('nav.directory'),
       icon: <Folder size={20} />,
       children: [
-        { key: 'clients', to: '/clients', label: t('nav.clients'), icon: <Building2 size={20} /> },
-        { key: 'contractors', to: '/contractors', label: t('nav.contractors'), icon: <HardHat size={20} /> },
+        { key: 'contractors', to: '/contractors', label: t('nav.contractors', 'Contratistas'), icon: <HardHat size={20} /> },
       ],
     },
     ...(isAdmin
@@ -135,8 +137,14 @@ export function Shell() {
               </span>
             )}
           </Link>
+          <ClientSelector />
         </div>
         <div className="header-right">
+          {activeClientId && (
+            <Link to="/client-settings" className="btn small ghost icon-only" title={t('common.settings', 'Configuración')}>
+              <SettingsIcon size={16} />
+            </Link>
+          )}
           {user && (
             <Link to="/profile" className="user-chip" title={user.email}>
               <User size={16} />
@@ -239,13 +247,14 @@ export function Shell() {
           <Routes>
           <Route path="/" element={<Protected><DashboardPage /></Protected>} />
           <Route path="/clients" element={<Protected><ClientsPage /></Protected>} />
+          <Route path="/contractors" element={<Protected><ContractorsPage /></Protected>} />
+          <Route path="/client-settings" element={<Protected><ClientSettingsPage /></Protected>} />
           <Route path="/clients/import" element={<Protected><ClientsImportPage /></Protected>} />
           <Route path="/clients/:id" element={<Protected><ClientDetailRoute /></Protected>} />
           <Route
             path="/clients/:id/contractors/import"
             element={<Protected><ClientContractorsImportRoute /></Protected>}
           />
-          <Route path="/contractors" element={<Protected><ContractorsPage /></Protected>} />
           <Route path="/profile" element={<Protected><ProfilePage /></Protected>} />
           <Route path="/document-types" element={<Protected adminOnly><DocumentTypesPage /></Protected>} />
           <Route path="/users" element={<Protected adminOnly><UsersPage /></Protected>} />
@@ -291,10 +300,12 @@ export default function App() {
     <BrowserRouter>
       <BrandingProvider>
         <AuthProvider>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/*" element={<Shell />} />
-          </Routes>
+          <ActiveClientProvider>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/*" element={<Shell />} />
+            </Routes>
+          </ActiveClientProvider>
         </AuthProvider>
       </BrandingProvider>
     </BrowserRouter>

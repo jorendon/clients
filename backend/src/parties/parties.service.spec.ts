@@ -33,7 +33,9 @@ describe('PartiesService', () => {
     isClient: true,
     clientTypes: [{ partyId: 1, clientType: ClientType.ACCOUNTING }],
     documentNumber: '82-4839524',
+    documentTypeId: 2,
     deletedAt: null,
+    addresses: [],
   };
 
   beforeEach(async () => {
@@ -110,7 +112,7 @@ describe('PartiesService', () => {
   });
 
   it('associateContractor: asocia (idempotente vía upsert)', async () => {
-    const contractor = { id: 2, fullName: '5 STAR CLEANING LLC', deletedAt: null };
+    const contractor = { id: 2, fullName: '5 STAR CLEANING LLC', deletedAt: null, addresses: [] };
     party.findFirst
       .mockResolvedValueOnce(cobica)
       .mockResolvedValueOnce(contractor)
@@ -153,7 +155,7 @@ describe('PartiesService', () => {
   });
 
   it('importClientContractors: crea y asocia filas nuevas', async () => {
-    const created = { id: 2, fullName: '5 STAR CLEANING LLC', deletedAt: null };
+    const created = { id: 2, fullName: '5 STAR CLEANING LLC', deletedAt: null, addresses: [] };
     party.findUnique.mockResolvedValue(null); // create: no existe
     party.findFirst
       .mockResolvedValueOnce(cobica) // findClientDetail (inicio)
@@ -189,7 +191,7 @@ describe('PartiesService', () => {
   });
 
   it('importClientContractors: asocia sin duplicar si ya existe (otro cliente)', async () => {
-    const existing = { id: 5, fullName: 'MASSEY SERVICES INC', deletedAt: null };
+    const existing = { id: 5, fullName: 'MASSEY SERVICES INC', deletedAt: null, addresses: [] };
     party.findFirst
       .mockResolvedValueOnce(cobica) // findClientDetail
       .mockResolvedValueOnce(existing) // existe por documento
@@ -214,7 +216,7 @@ describe('PartiesService', () => {
     party.findFirst
       .mockResolvedValueOnce(cobica) // findClientDetail (inicio)
       .mockResolvedValueOnce(null) // lookup fila 2: no existe
-      .mockResolvedValue({ id: 9, fullName: 'A1 SEPTIC', deletedAt: null }); // resto
+      .mockResolvedValue({ id: 9, fullName: 'A1 SEPTIC', deletedAt: null, addresses: [] }); // resto
     party.create.mockResolvedValue({ id: 9 });
     clientContractor.upsert.mockResolvedValue({});
     clientContractor.findMany.mockResolvedValue([]);
@@ -232,7 +234,7 @@ describe('PartiesService', () => {
   });
 
   it('importClients: marca como cliente si la entidad ya existía', async () => {
-    const existing = { id: 7, fullName: 'EMPRESA X', isClient: false, deletedAt: null, clientTypes: [] };
+    const existing = { id: 7, fullName: 'EMPRESA X', isClient: false, deletedAt: null, clientTypes: [], addresses: [] };
     documentType.findMany.mockResolvedValue([]);
     party.findUnique.mockResolvedValue(existing); // create: existe activo → conflicto
     party.findFirst
@@ -242,22 +244,25 @@ describe('PartiesService', () => {
       .mockResolvedValue(existing); // update: findParty final
 
     const report = await service.importClients([
-      { fullName: 'EMPRESA X', documentNumber: '12-3456789' },
+      { fullName: 'EMPRESA X', documentNumber: '12-3456789', address: '123 Fake St, Miami, FL 33101' },
     ]);
+    if (report.errors.length > 0) {
+      console.log('Errors:', report.errors);
+    }
 
+    expect(report.errors).toEqual([]);
     expect(report.markedClient).toBe(1);
     expect(report.created).toBe(0);
-    expect(report.errors).toEqual([]);
   });
 
   it('importClients: cuenta ya-existentes sin error al recargar', async () => {
-    const existingClient = { id: 7, fullName: 'EMPRESA X', isClient: true, deletedAt: null };
+    const existingClient = { id: 7, fullName: 'EMPRESA X', isClient: true, deletedAt: null, addresses: [] };
     documentType.findMany.mockResolvedValue([]);
     party.findUnique.mockResolvedValue(existingClient);
     party.findFirst.mockResolvedValue(existingClient);
 
     const report = await service.importClients([
-      { fullName: 'EMPRESA X', documentNumber: '12-3456789' },
+      { fullName: 'EMPRESA X', documentNumber: '12-3456789', address: '123 Fake St, Miami, FL 33101' },
     ]);
 
     expect(report.existing).toBe(1);

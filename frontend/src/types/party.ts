@@ -41,6 +41,7 @@ export interface Party {
   kind: PartyKind;
   fullName: string;
   isClient: boolean;
+  isComplete: boolean;
   clientTypes: { clientType: ClientType }[];
   registryNumber: string | null;
   documentTypeId: number | null;
@@ -89,11 +90,11 @@ export interface PartyInput {
   fullName: string;
   isClient?: boolean;
   clientTypes?: ClientType[];
-  registryNumber?: string;
-  documentTypeId?: number;
-  documentNumber?: string;
-  email?: string;
-  phone?: string;
+  registryNumber?: string | null;
+  documentTypeId?: number | null;
+  documentNumber?: string | null;
+  email?: string | null;
+  phone?: string | null;
   contacts?: PartyContactInput[];
   addresses?: PartyAddressInput[];
 }

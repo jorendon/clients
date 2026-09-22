@@ -72,6 +72,7 @@ model Party {
   kind               PartyKind
   fullName           String      @map("full_name") @db.VarChar(180)
   isClient           Boolean     @default(false) @map("is_client")
+  isComplete         Boolean     @default(true) @map("is_complete")
   registryNumber     String?     @map("registry_number") @db.VarChar(60)
   documentTypeId     Int?        @map("document_type_id")
   documentNumber     String?     @map("document_number") @db.VarChar(60)
