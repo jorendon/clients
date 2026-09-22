@@ -93,7 +93,7 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
       NumeroDocumento: c.documentNumber || '',
       Email: c.email || '',
       Telefono: c.phone || '',
-      Estado: c.isComplete ? 'Completo' : 'Incompleto'
+      Estado: c.isComplete ? t('contractors.statusComplete', 'Completo') : t('contractors.statusIncomplete', 'Incompleto')
     }));
     const csv = Papa.unparse(data);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -144,13 +144,13 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
               onChange={(e) => setStatusFilter(e.target.value as any)}
               style={{ width: 'auto', minWidth: '160px' }}
             >
-              <option value="ALL">Todos los estados</option>
-              <option value="COMPLETE">Completos</option>
-              <option value="INCOMPLETE">Incompletos</option>
+              <option value="ALL">{t('contractors.filterAll', 'Todos los estados')}</option>
+              <option value="COMPLETE">{t('contractors.filterComplete', 'Completos')}</option>
+              <option value="INCOMPLETE">{t('contractors.filterIncomplete', 'Incompletos')}</option>
             </select>
-            <button type="button" className="btn ghost" onClick={handleExport} title="Exportar a CSV" style={{ display: 'inline-flex', gap: '0.4rem', alignItems: 'center' }}>
+            <button type="button" className="btn ghost" onClick={handleExport} title={t('common.exportCsv', 'Exportar a CSV')} style={{ display: 'inline-flex', gap: '0.4rem', alignItems: 'center' }}>
               <Download size={16} />
-              Exportar
+              {t('common.export', 'Exportar')}
             </button>
           </div>
           <div className="table-wrap" style={{ maxHeight: '400px', overflowY: 'auto' }}>
@@ -178,9 +178,9 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
                         <span className="badge admin">{t('contractors.isClientBadge')}</span>
                       )}
                       {contractor.isComplete ? (
-                        <span className="badge ok" style={{ marginLeft: '4px' }}>Completo</span>
+                        <span className="badge ok" style={{ marginLeft: '4px' }}>{t('contractors.statusComplete', 'COMPLETO')}</span>
                       ) : (
-                        <span className="badge warning" style={{ marginLeft: '4px' }}>Incompleto</span>
+                        <span className="badge warning" style={{ marginLeft: '4px' }}>{t('contractors.statusIncomplete', 'INCOMPLETO')}</span>
                       )}
                     </td>
                     <td className="muted">
