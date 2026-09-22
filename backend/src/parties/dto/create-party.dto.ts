@@ -97,6 +97,10 @@ export class CreatePartyDto {
   isClient?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  isComplete?: boolean;
+
+  @IsOptional()
   @IsArray()
   @IsEnum(ClientType, { each: true, message: 'validation.invalidValue' })
   clientTypes?: ClientType[];

@@ -15,6 +15,7 @@ export interface ImportContractorRow {
   id?: string;
   email?: string;
   phone?: string;
+  mergeId?: number;
 }
 
 export interface ImportClientRow {

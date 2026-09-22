@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react';
 interface ImportHelpModalProps {
   isOpen: boolean;
   onClose: () => void;
-  mode: 'client' | 'contractor';
+  mode: 'client' | 'contractor' | 'contractor-names';
 }
 
 export function ImportHelpModal({ isOpen, onClose, mode }: ImportHelpModalProps) {
@@ -37,6 +37,11 @@ export function ImportHelpModal({ isOpen, onClose, mode }: ImportHelpModalProps)
       csvContent += "Name,Type,ClientType,DocumentType,DocumentNumber,Email,Phone,ContactFirstName,ContactLastName,ContactEmail,ContactPhone,Address\n";
       csvContent += "Acme Corp,COMPANY,ACCOUNTING,FEI/EIN,123456789,acme@example.com,555-0100,John,Doe,john@example.com,555-0101,123 Main St Miami FL 33101\n";
       filename = "clients_template.csv";
+    } else if (mode === 'contractor-names') {
+      csvContent += "Name\n";
+      csvContent += "Jane Smith\n";
+      csvContent += "Acme Corp\n";
+      filename = "contractors_names_template.csv";
     } else {
       csvContent += "Name,Type,DocumentType,DocumentNumber,Email,Phone,Address\n";
       csvContent += "Jane Smith,PERSON,SSN,987654321,jane@example.com,555-0200,456 Oak St Orlando FL 32801\n";
@@ -68,11 +73,13 @@ export function ImportHelpModal({ isOpen, onClose, mode }: ImportHelpModalProps)
         </header>
         
         <div className="modal-body">
-          <p>
-            {t('import.helpDesc')}
-            <br /><br />
-            <strong>Nota sobre Tipo de Identificación (ID Type):</strong> Debes colocar el código o nombre exacto configurado en el sistema (ej. <code>FEI_EIN</code>, <code>FEI/EIN</code>, <code>SSN</code>, <code>ITIN</code>).
-          </p>
+          {mode !== 'contractor-names' && (
+            <p>
+              {t('import.helpDesc')}
+              <br /><br />
+              <strong>{t('import.idTypeNoteTitle', 'Nota sobre Tipo de Identificación (ID Type):')}</strong> {t('import.idTypeNoteDesc', 'Debes colocar el código o nombre exacto configurado en el sistema (ej. FEI_EIN, FEI/EIN, SSN, ITIN).')}
+            </p>
+          )}
           
           {mode === 'client' ? (
             <div className="table-wrap">
@@ -95,6 +102,24 @@ export function ImportHelpModal({ isOpen, onClose, mode }: ImportHelpModalProps)
                     <td>acme@example.com</td>
                     <td>555-0100</td>
                     <td>123 Main St Miami FL</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          ) : mode === 'contractor-names' ? (
+            <div className="table-wrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Name / Nombre</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Jane Smith</td>
+                  </tr>
+                  <tr>
+                    <td>Acme Corp</td>
                   </tr>
                 </tbody>
               </table>

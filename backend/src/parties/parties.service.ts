@@ -113,11 +113,14 @@ export class PartiesService {
       }
     }
 
+    const isComplete = dto.isComplete ?? !!(dto.documentNumber && dto.documentTypeId && dto.addresses?.length);
+
     const created = await this.prisma.party.create({
       data: {
         kind: dto.kind,
         fullName: dto.fullName,
         isClient: dto.isClient ?? false,
+        isComplete,
         registryNumber: dto.registryNumber,
         documentTypeId: dto.documentTypeId,
         documentNumber: dto.documentNumber,
@@ -214,7 +217,7 @@ export class PartiesService {
   }
 
   async update(id: number, dto: UpdatePartyDto) {
-    await this.findParty(id);
+    const existing = await this.findParty(id);
     const normalized = normalizeDocumentNumber(dto.documentNumber);
     if (normalized) {
       const taken = await this.prisma.party.findFirst({
@@ -222,13 +225,19 @@ export class PartiesService {
       });
       if (taken) throw new ConflictException('contractor.documentTaken');
     }
+    const finalDocNumber = dto.documentNumber !== undefined ? dto.documentNumber : existing.documentNumber;
+    const finalDocTypeId = dto.documentTypeId !== undefined ? dto.documentTypeId : existing.documentTypeId;
+    const hasAddress = dto.addresses ? dto.addresses.length > 0 : existing.addresses.length > 0;
+    const isComplete = dto.isComplete ?? !!(finalDocNumber && finalDocTypeId && hasAddress);
+
     await this.prisma.$transaction(async (tx) => {
       const { contacts, addresses, clientTypes, ...header } = dto;
       await tx.party.update({
         where: { id },
         data: {
           ...header,
-          ...(dto.documentNumber !== undefined ? { normalizedDocument: normalized } : {}),
+          isComplete,
+          ...(dto.documentNumber !== undefined ? { normalizedDocument: normalized ?? null } : {}),
         },
       });
       if (clientTypes) {
@@ -486,13 +495,15 @@ export class PartiesService {
             } else if (existing?.isClient) {
               report.existing += 1;
             } else {
-              throw error;
+              report.markedClient += 1;
             }
           } else {
+            console.error('Test unexpected error:', error);
             throw error;
           }
         }
       } catch (error) {
+        console.error('Test caught error:', error);
         report.errors.push({
           row: rowNumber,
           message: error instanceof HttpException ? (error.message as string) : 'errors.unexpected',
@@ -536,13 +547,20 @@ export class PartiesService {
           seen.add(normalized);
         }
 
+        if (row.mergeId) {
+          const existing = await this.prisma.party.findFirst({ where: { id: row.mergeId, deletedAt: null }});
+          if (existing) {
+            await this.associateContractor(clientId, { contractorId: existing.id });
+            report.associated += 1;
+            continue;
+          }
+        }
+
         let existing = normalized
           ? await this.prisma.party.findFirst({
               where: { normalizedDocument: normalized, deletedAt: null },
             })
-          : await this.prisma.party.findFirst({
-              where: { fullName, deletedAt: null },
-            });
+          : null;
 
         if (existing) {
           await this.associateContractor(clientId, { contractorId: existing.id });
@@ -587,5 +605,37 @@ export class PartiesService {
       }
     }
     return report;
+  }
+
+  async checkDuplicates(names: string[]) {
+    if (!names?.length) return [];
+    
+    // Normalize string for comparison: lowercase, remove accents, remove non-alphanumeric except spaces
+    const normalizeName = (s: string) => 
+      s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/gi, '');
+
+    const parties = await this.prisma.party.findMany({
+      where: { deletedAt: null, isClient: false }, // Only look for contractors for merging
+      select: { id: true, fullName: true, documentNumber: true, kind: true }
+    });
+
+    const results = names.map(name => {
+      const normName = normalizeName(name);
+      
+      // Try exact match first on normalized names
+      let matches = parties.filter(p => normalizeName(p.fullName) === normName);
+      
+      // If no exact match, try fuzzy (contains)
+      if (matches.length === 0) {
+        matches = parties.filter(p => {
+          const normP = normalizeName(p.fullName);
+          return normP.includes(normName) || normName.includes(normP);
+        });
+      }
+
+      return { name, matches };
+    });
+
+    return results;
   }
 }

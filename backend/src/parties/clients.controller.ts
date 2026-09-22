@@ -76,6 +76,15 @@ export class ClientsController {
     return this.partiesService.importClientContractors(id, dto.rows ?? []);
   }
 
+  @Post(':id/contractors/check-duplicates')
+  @HttpCode(HttpStatus.OK)
+  checkContractorDuplicates(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: { names: string[] },
+  ) {
+    return this.partiesService.checkDuplicates(dto.names);
+  }
+
   @Delete(':id/contractors/:contractorId')
   @HttpCode(HttpStatus.OK)
   dissociateContractor(

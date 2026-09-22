@@ -126,11 +126,11 @@ export function PartyForm({
       ...((clientMode || isClient) && clientTypes.length
         ? { clientTypes }
         : {}),
-      ...(registryNumber.trim() ? { registryNumber: registryNumber.trim() } : {}),
-      ...(documentTypeId ? { documentTypeId: Number(documentTypeId) } : {}),
-      ...(documentNumber.trim() ? { documentNumber: documentNumber.trim() } : {}),
-      ...(email.trim() ? { email: email.trim() } : {}),
-      ...(phone.trim() ? { phone: phone.trim() } : {}),
+      registryNumber: registryNumber.trim() || null,
+      documentTypeId: documentTypeId ? Number(documentTypeId) : null,
+      documentNumber: documentNumber.trim() || null,
+      email: email.trim() || null,
+      phone: phone.trim() || null,
     };
     const cleanedContacts = contacts
       .map(cleanContact)

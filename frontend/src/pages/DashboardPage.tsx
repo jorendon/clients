@@ -1,11 +1,13 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { Building2, HardHat, Settings, Users, Upload } from 'lucide-react';
+import { Building2, Settings, Users, Upload, HardHat } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
+import { useActiveClient } from '../context/ActiveClientContext';
 
 export function DashboardPage() {
   const { t } = useTranslation();
   const { user, isAdmin } = useAuth();
+  const { activeClientId } = useActiveClient();
 
   return (
     <div className="page dashboard-page">
@@ -23,13 +25,7 @@ export function DashboardPage() {
           <p className="muted">{t('dashboard.clientsDesc')}</p>
         </Link>
 
-        <Link to="/contractors" className="quick-action-card">
-          <div className="icon-wrapper secondary">
-            <HardHat size={28} />
-          </div>
-          <h3>{t('dashboard.contractors')}</h3>
-          <p className="muted">{t('dashboard.contractorsDesc')}</p>
-        </Link>
+
 
         <Link to="/clients/import" className="quick-action-card">
           <div className="icon-wrapper info">
@@ -38,6 +34,16 @@ export function DashboardPage() {
           <h3>{t('dashboard.import')}</h3>
           <p className="muted">{t('dashboard.importDesc')}</p>
         </Link>
+
+        {activeClientId && (
+          <Link to={`/clients/${activeClientId}/contractors/import`} className="quick-action-card">
+            <div className="icon-wrapper success">
+              <HardHat size={28} />
+            </div>
+            <h3>{t('dashboard.importContractors', 'Carga Masiva (Contratistas)')}</h3>
+            <p className="muted">{t('dashboard.importContractorsDesc', 'Sube el layout en Excel o CSV')}</p>
+          </Link>
+        )}
 
         {isAdmin && (
           <Link to="/users" className="quick-action-card">

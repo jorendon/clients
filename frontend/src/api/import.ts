@@ -38,3 +38,25 @@ export async function importClientContractors(
   });
   return data;
 }
+
+export interface DuplicateMatch {
+  id: number;
+  fullName: string;
+  documentNumber: string | null;
+  kind: string;
+}
+
+export interface DuplicateResult {
+  name: string;
+  matches: DuplicateMatch[];
+}
+
+export async function checkContractorDuplicates(
+  clientId: number,
+  names: string[],
+): Promise<DuplicateResult[]> {
+  const { data } = await apiClient.post<DuplicateResult[]>(`/clients/${clientId}/contractors/check-duplicates`, {
+    names,
+  });
+  return data;
+}
