@@ -1,0 +1,240 @@
+--- backend/src/parties/parties.service.ts
++++ backend/src/parties/parties.service.ts
+@@ -2,6 +2,7 @@
+ import { AddressKind, ClientType, PartyKind, Prisma } from '@prisma/client';
+ import { PrismaService } from '../prisma/prisma.service.js';
++import { CryptoService } from '../common/crypto/crypto.service.js';
+ import { AssociateContractorDto } from './dto/associate-contractor.dto.js';
+ import { CreatePartyDto, PartyAddressDto, PartyContactDto } from './dto/create-party.dto.js';
+ import { UpdatePartyDto } from './dto/update-party.dto.js';
+@@ -51,21 +52,28 @@
+ }
+ 
+-function maskParty<T extends { documentNumber?: string | null; contacts?: { documentNumber?: string | null }[] }>(party: T): T {
++function maskParty<T extends { documentNumber?: string | null; contacts?: { documentNumber?: string | null }[] }>(party: T, crypto: CryptoService): T {
+   if (party.documentNumber) {
+-    (party as any).documentNumber = maskDocumentNumber(party.documentNumber);
++    const decrypted = crypto.decrypt(party.documentNumber);
++    (party as any).documentNumber = maskDocumentNumber(decrypted);
++  }
++  if (party.contacts) {
++    party.contacts.forEach((c: any) => {
++      if (c.documentNumber) c.documentNumber = crypto.decrypt(c.documentNumber);
++    });
+   }
+   return party;
+ }
+ 
+-function toContactCreate(partyId: number, dto: PartyContactDto): Prisma.PartyContactCreateManyInput {
++function toContactCreate(partyId: number, dto: PartyContactDto, crypto: CryptoService): Prisma.PartyContactCreateManyInput {
+   return {
+     partyId,
+     firstName: dto.firstName,
+     lastName: dto.lastName,
+     email: dto.email,
+     phone: dto.phone,
+     documentTypeId: dto.documentTypeId,
+-    documentNumber: dto.documentNumber,
++    documentNumber: dto.documentNumber ? crypto.encrypt(dto.documentNumber) : undefined,
+     isPrimary: dto.isPrimary ?? false,
+   };
+ }
+@@ -91,16 +99,17 @@
+ 
+ @Injectable()
+ export class PartiesService {
+-  constructor(private readonly prisma: PrismaService) {}
++  constructor(private readonly prisma: PrismaService, private readonly crypto: CryptoService) {}
+ 
+   /** Crea una entidad (persona o empresa), opcionalmente marcada como cliente. */
+   async create(dto: CreatePartyDto) {
+     requireFiscalAddress(dto.addresses);
+     const normalized = normalizeDocumentNumber(dto.documentNumber);
++    const hashedNormalized = normalized ? this.crypto.hashDeterministic(normalized) : undefined;
+     if (normalized) {
+       const existing = await this.prisma.party.findUnique({
+-        where: { normalizedDocument: normalized },
++        where: { normalizedDocument: hashedNormalized },
+       });
+       if (existing && !existing.deletedAt) {
+         throw new ConflictException('contractor.documentTaken');
+@@ -114,8 +123,8 @@
+             isClient: dto.isClient ?? existing.isClient,
+             registryNumber: dto.registryNumber,
+             documentTypeId: dto.documentTypeId,
+-            documentNumber: dto.documentNumber,
+-            normalizedDocument: normalized,
++            documentNumber: dto.documentNumber ? this.crypto.encrypt(dto.documentNumber) : null,
++            normalizedDocument: hashedNormalized ?? null,
+             email: dto.email,
+             phone: dto.phone,
+             deletedAt: null,
+@@ -139,8 +148,8 @@
+         isComplete,
+         registryNumber: dto.registryNumber,
+         documentTypeId: dto.documentTypeId,
+-        documentNumber: dto.documentNumber,
+-        normalizedDocument: normalized,
++        documentNumber: dto.documentNumber ? this.crypto.encrypt(dto.documentNumber) : null,
++        normalizedDocument: hashedNormalized ?? null,
+         email: dto.email,
+         phone: dto.phone,
+         ...(dto.clientTypes?.length
+@@ -178,7 +187,7 @@
+         _count: { select: { clientLinks: true } },
+       },
+     });
+-    return results.map(maskParty);
++    return results.map(r => maskParty(r, this.crypto));
+   }
+ 
+   /** Vista Contratistas: todas las entidades activas (incluye las que son cliente). */
+@@ -202,7 +211,7 @@
+         _count: { select: { contractorLinks: true } },
+       },
+     });
+-    return results.map(maskParty);
++    return results.map(r => maskParty(r, this.crypto));
+   }
+ 
+   async findParty(id: number) {
+@@ -211,18 +220,19 @@
+       include: detailInclude,
+     });
+     if (!party) throw new NotFoundException(`contractor.notFound:${id}`);
+-    return maskParty(party);
++    return maskParty(party, this.crypto);
+   }
+ 
+   /** Busca por identificación normalizada (base para la carga masiva). */
+   async searchByDocument(document: string) {
+     const normalized = normalizeDocumentNumber(document);
+     if (!normalized) return Promise.resolve(null);
++    const hashedNormalized = this.crypto.hashDeterministic(normalized);
+     const result = await this.prisma.party.findFirst({
+-      where: { normalizedDocument: normalized, deletedAt: null },
++      where: { normalizedDocument: hashedNormalized, deletedAt: null },
+       include: detailInclude,
+     });
+-    return result ? maskParty(result) : null;
++    return result ? maskParty(result, this.crypto) : null;
+   }
+ 
+   async findClientDetail(id: number) {
+@@ -231,7 +241,7 @@
+       include: clientDetailInclude,
+     });
+     if (!client) throw new NotFoundException(`client.notFound:${id}`);
+-    return maskParty(client);
++    return maskParty(client, this.crypto);
+   }
+ 
+   async update(id: number, dto: UpdatePartyDto) {
+@@ -252,9 +262,10 @@
+     }
+ 
+     const normalized = normalizeDocumentNumber(dto.documentNumber);
++    const hashedNormalized = normalized ? this.crypto.hashDeterministic(normalized) : undefined;
+     if (normalized) {
+       const taken = await this.prisma.party.findFirst({
+-        where: { normalizedDocument: normalized, NOT: { id }, deletedAt: null },
++        where: { normalizedDocument: hashedNormalized, NOT: { id }, deletedAt: null },
+       });
+       if (taken) throw new ConflictException('contractor.documentTaken');
+     }
+@@ -269,7 +280,8 @@
+         data: {
+           ...header,
+           isComplete,
+-          ...(dto.documentNumber !== undefined ? { normalizedDocument: normalized ?? null } : {}),
++          ...(dto.documentNumber !== undefined ? { documentNumber: dto.documentNumber ? this.crypto.encrypt(dto.documentNumber) : null } : {}),
++          ...(dto.documentNumber !== undefined ? { normalizedDocument: hashedNormalized ?? null } : {}),
+         },
+       });
+       if (clientTypes) {
+@@ -308,7 +320,7 @@
+       await client.partyContact.deleteMany({ where: { partyId } });
+       if (contacts.length) {
+         await client.partyContact.createMany({
+-          data: contacts.map((c) => toContactCreate(partyId, c)),
++          data: contacts.map((c) => toContactCreate(partyId, c, this.crypto)),
+         });
+       }
+     }
+@@ -351,7 +363,7 @@
+       data: { deletedAt: new Date() },
+       include: detailInclude,
+     });
+-    return maskParty(result);
++    return maskParty(result, this.crypto);
+   }
+ 
+   async restore(id: number) {
+@@ -368,7 +380,7 @@
+       include: { contractor: { include: detailInclude } },
+       orderBy: { assignedAt: 'desc' },
+     });
+-    return links.map((link) => ({ ...maskParty(link.contractor), assignedAt: link.assignedAt }));
++    return links.map((link) => ({ ...maskParty(link.contractor, this.crypto), assignedAt: link.assignedAt }));
+   }
+ 
+   async getUnmaskedDocumentNumber(id: number) {
+@@ -377,7 +389,8 @@
+       select: { documentNumber: true },
+     });
+     if (!party) throw new NotFoundException(`contractor.notFound:${id}`);
+-    return { documentNumber: party.documentNumber };
++    const decrypted = party.documentNumber ? this.crypto.decrypt(party.documentNumber) : null;
++    return { documentNumber: decrypted };
+   }
+ 
+   /**
+@@ -449,6 +462,7 @@
+         }
+ 
+         const normalized = normalizeDocumentNumber(row.documentNumber);
++        const hashedNormalized = normalized ? this.crypto.hashDeterministic(normalized) : undefined;
+         if (normalized) {
+           if (seen.has(normalized)) {
+             report.duplicatesInFile += 1;
+@@ -523,7 +537,7 @@
+         } catch (error) {
+-          if (error instanceof ConflictException && normalized) {
++          if (error instanceof ConflictException && hashedNormalized) {
+             const existing = await this.prisma.party.findFirst({
+-              where: { normalizedDocument: normalized, deletedAt: null },
++              where: { normalizedDocument: hashedNormalized, deletedAt: null },
+               include: { clientTypes: true },
+             });
+             if (existing && !existing.isClient) {
+@@ -582,6 +596,7 @@
+         if (!kind) throw new BadRequestException('import.invalidKind');
+ 
+         const normalized = normalizeDocumentNumber(row.id);
++        const hashedNormalized = normalized ? this.crypto.hashDeterministic(normalized) : undefined;
+         if (normalized) {
+           if (seen.has(normalized)) {
+             report.duplicatesInFile += 1;
+@@ -600,9 +615,9 @@
+           }
+         }
+ 
+-        let existing = normalized
++        let existing = hashedNormalized
+           ? await this.prisma.party.findFirst({
+-              where: { normalizedDocument: normalized, deletedAt: null },
++              where: { normalizedDocument: hashedNormalized, deletedAt: null },
+             })
+           : null;
+ 
+@@ -660,6 +675,10 @@
+ 
+     const parties = await this.prisma.party.findMany({
+       where: { deletedAt: null, isClient: false }, // Only look for contractors for merging
+       select: { id: true, fullName: true, documentNumber: true, kind: true }
+     });
++    parties.forEach(p => {
++      if (p.documentNumber) p.documentNumber = this.crypto.decrypt(p.documentNumber);
++    });
+ 
+     const results = names.map(name => {

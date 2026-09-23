@@ -6,6 +6,7 @@ import { fetchDocumentTypes } from '../api/documentTypes';
 import type { Party, DocumentType, PartyInput } from '../types/party';
 import { PartyForm } from '../components/PartyForm';
 import { getApiErrorMessage } from '../utils/apiErrors';
+import { MaskedDocument } from '../components/MaskedDocument';
 
 export function ClientSettingsPage() {
   const { activeClientId } = useActiveClient();
@@ -161,7 +162,11 @@ export function ClientSettingsPage() {
             <div className="settings-row">
               <div className="settings-label">{client.documentType ? client.documentType.code : 'EIN / SSN'}</div>
               <div className="settings-value">
-                {client.documentNumber || <span className="muted">{t('clients.settingsNoneListed', 'None listed')}</span>}
+                {client.documentNumber ? (
+                  <MaskedDocument partyId={client.id} initialMasked={client.documentNumber} fallback="" />
+                ) : (
+                  <span className="muted">{t('clients.settingsNoneListed', 'None listed')}</span>
+                )}
               </div>
               <button type="button" className="btn link small" onClick={() => setShowForm(true)}>{t('common.edit', 'Edit')}</button>
             </div>

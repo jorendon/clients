@@ -1,0 +1,475 @@
+
+> frontend@0.0.0 test
+> vitest run
+
+
+ RUN  v5.0.1 /Users/jonathan/clients/frontend
+
+ ✓ src/api/import.test.ts (2 tests) 2ms
+ ✓ src/api/users.test.ts (5 tests) 3ms
+ ✓ src/branding/theme.test.ts (2 tests) 3ms
+ ✓ src/api/parties.test.ts (6 tests) 3ms
+ ✓ src/utils/csvImport.test.ts (8 tests) 17ms
+stderr | src/pages/LoginPage.test.tsx > LoginPage branding > vuelve a OC si el logo no carga
+An update to LoginPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/components/LanguageSwitcher.test.tsx > LanguageSwitcher > cambia el idioma de la UI a inglés y de vuelta a español
+An update to LanguageSwitcher inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to Probe inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ ✓ src/components/LanguageSwitcher.test.tsx (2 tests) 99ms
+ ✓ src/auth/AuthContext.test.tsx (1 test) 98ms
+ ✓ src/components/ImportStagingTable.test.tsx (2 tests) 110ms
+ ✓ src/components/UserTable.test.tsx (3 tests) 98ms
+ ✓ src/components/UserForm.test.tsx (2 tests) 221ms
+ ✓ src/components/PartyForm.test.tsx (4 tests) 286ms
+ ❯ src/App.test.tsx (3 tests | 3 failed) 12ms
+   ❯ Sidebar plegable (3)
+     × alterna entre expandido y riel al pulsar el botón 9ms
+     × bloquea el flyout al recoger hasta sacar el mouse 1ms
+     × recuerda el estado recogido 1ms
+ ❯ src/pages/LoginPage.test.tsx (3 tests | 2 failed) 1090ms
+   ❯ LoginPage branding (3)
+     × muestra OC cuando no hay logo configurado 27ms
+     ✓ muestra el logo configurado en grande 53ms
+     × vuelve a OC si el logo no carga 1008ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/App.test.tsx > Sidebar plegable > alterna entre expandido y riel al pulsar el botón
+ FAIL  src/App.test.tsx > Sidebar plegable > bloquea el flyout al recoger hasta sacar el mouse
+ FAIL  src/App.test.tsx > Sidebar plegable > recuerda el estado recogido
+Error: useActiveClient must be used within an ActiveClientProvider
+ ❯ useActiveClient src/context/ActiveClientContext.tsx:37:11
+     35|   const context = useContext(ActiveClientContext);
+     36|   if (context === undefined) {
+     37|     throw new Error('useActiveClient must be used within an ActiveClie…
+       |           ^
+     38|   }
+     39|   return context;
+ ❯ Shell src/App.tsx:57:30
+ ❯ Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:28571:20
+ ❯ renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:8030:22
+ ❯ updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10569:19
+ ❯ beginWork node_modules/react-dom/cjs/react-dom-client.development.js:12205:18
+ ❯ runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:1048:13
+ ❯ performUnitOfWork node_modules/react-dom/cjs/react-dom-client.development.js:19176:22
+ ❯ workLoopSync node_modules/react-dom/cjs/react-dom-client.development.js:19004:41
+ ❯ renderRootSync node_modules/react-dom/cjs/react-dom-client.development.js:18985:11
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  src/pages/LoginPage.test.tsx > LoginPage branding > muestra OC cuando no hay logo configurado
+TestingLibraryElementError: Unable to find an element with the text: OC. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"login-wrap split-view"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"login-visual-panel"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"login-visual-content"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"brand-mark huge"[39m
+          [36m>[39m
+            [0mC[0m
+          [36m</span>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"hero-title"[39m
+          [36m>[39m
+            [0mClients[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"hero-tagline"[39m
+          [36m>[39m
+            [0mClients & Contractors[0m
+          [36m</p>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"visual-background-mesh"[39m
+        [36m/>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"login-form-panel"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"login-top"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33maria-label[39m=[32m"Idioma"[39m
+            [33mclass[39m=[32m"lang-switch"[39m
+            [33mrole[39m=[32m"group"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"lang-btn active"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [0mES[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"false"[39m
+              [33mclass[39m=[32m"lang-btn"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [0mEN[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"login-form-container"[39m
+        [36m>[39m
+          [36m<form[39m
+            [33mclass[39m=[32m"form login-form"[39m
+            [33mnovalidate[39m=[32m""[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"login-form-header"[39m
+            [36m>[39m
+              [36m<h2>[39m
+                [0mIniciar sesión[0m
+              [36m</h2>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"muted"[39m
+              [36m>[39m
+                [0m¡Bienvenido/a de nuevo! Por favor ingresa tus datos.[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"field modern"[39m
+            [36m>[39m
+              [36m<span>[39m
+                [0mEmail[0m
+              [36m</span>[39m
+              [36m<input[39m
+                [33mautocomplete[39m=[32m"username"[39m
+                [33mplaceholder[39m=[32m"name@company.com"[39m
+                [33mtype[39m=[32m"email"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</label>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"field modern"[39m
+            [36m>[39m
+              [36m<span>[39m
+                [0mContraseña[0m
+              [36m</span>[39m
+              [36m<input[39m
+                [33mautocomplete[39m=[32m"current-password"[39m
+                [33mplaceholder[39m=[32m"••••••••"[39m
+                [33mtype[39m=[32m"password"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</label>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"btn primary block modern-btn"[39m
+              [33mtype[39m=[32m"submit"[39m
+            [36m>[39m
+              [0mEntrar[0m
+            [36m</button>[39m
+          [36m</form>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/pages/LoginPage.test.tsx:34:19
+     32|   it('muestra OC cuando no hay logo configurado', () => {
+     33|     renderLogin();
+     34|     expect(screen.getByText('OC')).toBeInTheDocument();
+       |                   ^
+     35|     expect(screen.queryByRole('img')).not.toBeInTheDocument();
+     36|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  src/pages/LoginPage.test.tsx > LoginPage branding > vuelve a OC si el logo no carga
+TestingLibraryElementError: Unable to find an element with the text: OC. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"login-wrap split-view"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"login-visual-panel"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"login-visual-content"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"brand-mark huge"[39m
+          [36m>[39m
+            [0mC[0m
+          [36m</span>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"hero-title"[39m
+          [36m>[39m
+            [0mClients[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"hero-tagline"[39m
+          [36m>[39m
+            [0mClients & Contractors[0m
+          [36m</p>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"visual-background-mesh"[39m
+        [36m/>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"login-form-panel"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"login-top"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33maria-label[39m=[32m"Idioma"[39m
+            [33mclass[39m=[32m"lang-switch"[39m
+            [33mrole[39m=[32m"group"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"lang-btn active"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [0mES[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"false"[39m
+              [33mclass[39m=[32m"lang-btn"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [0mEN[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"login-form-container"[39m
+        [36m>[39m
+          [36m<form[39m
+            [33mclass[39m=[32m"form login-form"[39m
+            [33mnovalidate[39m=[32m""[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"login-form-header"[39m
+            [36m>[39m
+              [36m<h2>[39m
+                [0mIniciar sesión[0m
+              [36m</h2>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"muted"[39m
+              [36m>[39m
+                [0m¡Bienvenido/a de nuevo! Por favor ingresa tus datos.[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"field modern"[39m
+            [36m>[39m
+              [36m<span>[39m
+                [0mEmail[0m
+              [36m</span>[39m
+              [36m<input[39m
+                [33mautocomplete[39m=[32m"username"[39m
+                [33mplaceholder[39m=[32m"name@company.com"[39m
+                [33mtype[39m=[32m"email"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</label>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"field modern"[39m
+            [36m>[39m
+              [36m<span>[39m
+                [0mContraseña[0m
+              [36m</span>[39m
+              [36m<input[39m
+                [33mautocomplete[39m=[32m"current-password"[39m
+                [33mplaceholder[39m=[32m"••••••••"[39m
+                [33mtype[39m=[32m"password"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</label>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"btn primary block modern-btn"[39m
+              [33mtype[39m=[32m"submit"[39m
+            [36m>[39m
+              [0mEntrar[0m
+            [36m</button>[39m
+          [36m</form>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"login-wrap split-view"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"login-visual-panel"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"login-visual-content"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"brand-mark huge"[39m
+          [36m>[39m
+            [0mC[0m
+          [36m</span>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"hero-title"[39m
+          [36m>[39m
+            [0mClients[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"hero-tagline"[39m
+          [36m>[39m
+            [0mClients & Contractors[0m
+          [36m</p>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"visual-background-mesh"[39m
+        [36m/>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"login-form-panel"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"login-top"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33maria-label[39m=[32m"Idioma"[39m
+            [33mclass[39m=[32m"lang-switch"[39m
+            [33mrole[39m=[32m"group"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"lang-btn active"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [0mES[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"false"[39m
+              [33mclass[39m=[32m"lang-btn"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [0mEN[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"login-form-container"[39m
+        [36m>[39m
+          [36m<form[39m
+            [33mclass[39m=[32m"form login-form"[39m
+            [33mnovalidate[39m=[32m""[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"login-form-header"[39m
+            [36m>[39m
+              [36m<h2>[39m
+                [0mIniciar sesión[0m
+              [36m</h2>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"muted"[39m
+              [36m>[39m
+                [0m¡Bienvenido/a de nuevo! Por favor ingresa tus datos.[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"field modern"[39m
+            [36m>[39m
+              [36m<span>[39m
+                [0mEmail[0m
+              [36m</span>[39m
+              [36m<input[39m
+                [33mautocomplete[39m=[32m"username"[39m
+                [33mplaceholder[39m=[32m"name@company.com"[39m
+                [33mtype[39m=[32m"email"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</label>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"field modern"[39m
+            [36m>[39m
+              [36m<span>[39m
+                [0mContraseña[0m
+              [36m</span>[39m
+              [36m<input[39m
+                [33mautocomplete[39m=[32m"current-password"[39m
+                [33mplaceholder[39m=[32m"••••••••"[39m
+                [33mtype[39m=[32m"password"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</label>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"btn primary block modern-btn"[39m
+              [33mtype[39m=[32m"submit"[39m
+            [36m>[39m
+              [0mEntrar[0m
+            [36m</button>[39m
+          [36m</form>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/pages/LoginPage.test.tsx:55:25
+     53|     // Simula fallo de carga
+     54|     img.dispatchEvent(new Event('error'));
+     55|     expect(await screen.findByText('OC')).toBeInTheDocument();
+       |                         ^
+     56|   });
+     57| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+
+ Test Files  2 failed | 11 passed (13)
+      Tests  5 failed | 38 passed (43)
+   Start at  09:33:37
+   Duration  4.30s (environment 65%, setup 22%, tests 5%, transform 4%, import 4%)
+

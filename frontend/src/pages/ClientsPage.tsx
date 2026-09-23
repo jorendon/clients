@@ -18,6 +18,8 @@ import { useSortableTable } from '../hooks/useSortableTable';
 
 type Toast = { kind: 'success' | 'error'; message: string } | null;
 
+import { MaskedDocument } from '../components/MaskedDocument';
+
 export function ClientsPage() {
   const { t } = useTranslation();
   const [clients, setClients] = useState<Party[]>([]);
@@ -226,7 +228,9 @@ export function ClientsPage() {
                   </td>
                   <td className="muted">{clientTypeLabel(client)}</td>
                   <td className="muted mono">{client.documentType?.code ?? '—'}</td>
-                  <td className="muted mono">{client.documentNumber ?? client.registryNumber ?? '—'}</td>
+                  <td className="muted mono">
+                    <MaskedDocument partyId={client.id} initialMasked={client.documentNumber} fallback={client.registryNumber ?? '—'} />
+                  </td>
                   <td>{client._count?.clientLinks ?? '—'}</td>
                   <td className="actions">
                     <button 

@@ -14,6 +14,7 @@ import { Link } from 'react-router-dom';
 import Papa from 'papaparse';
 import { PartyDetailModal } from './PartyDetailModal';
 import { PartyForm } from './PartyForm';
+import { MaskedDocument } from './MaskedDocument';
 
 export function ClientContractorsSection({ clientId }: { clientId: number }) {
   const { t } = useTranslation();
@@ -187,7 +188,7 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
                       {contractor.kind === 'COMPANY' ? t('clients.kindCompany') : t('clients.kindPerson')}
                     </td>
                     <td className="muted mono">
-                      {contractor.documentNumber ?? ''}
+                      <MaskedDocument partyId={contractor.id} initialMasked={contractor.documentNumber} fallback="" />
                     </td>
                     <td className="actions" onClick={(e) => e.stopPropagation()}>
                       <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>

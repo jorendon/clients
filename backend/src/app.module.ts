@@ -7,11 +7,13 @@ import { DocumentTypesModule } from './document-types/document-types.module.js';
 import { PartiesModule } from './parties/parties.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { UsersModule } from './users/users.module.js';
+import { CryptoModule } from './common/crypto/crypto.module.js';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    CryptoModule,
     AuthModule,
     UsersModule,
     DocumentTypesModule,

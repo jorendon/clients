@@ -32,6 +32,8 @@ services:
       FRONTEND_URL: http://localhost:5173
       DATABASE_URL: mysql://${MYSQL_USER:-clients}:${MYSQL_PASSWORD:-clientssecret}@mysql:3306/${MYSQL_DATABASE:-clients}
       JWT_SECRET: ${JWT_SECRET:-clients-dev-secret-change-me}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      HASH_SALT: ${HASH_SALT}
     ports:
       - "${BACKEND_PORT:-3000}:3000"
 

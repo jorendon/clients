@@ -2,6 +2,8 @@ import { useTranslation } from 'react-i18next';
 import type { PartyContractor } from '../types/party';
 import { formatAddress } from '../pages/ClientDetailPage';
 
+import { MaskedDocument } from './MaskedDocument';
+
 export function PartyDetailModal({ party, onClose }: { party: PartyContractor; onClose: () => void }) {
   const { t } = useTranslation();
   return (
@@ -12,7 +14,8 @@ export function PartyDetailModal({ party, onClose }: { party: PartyContractor; o
           <strong>{t('contractors.colKind')}:</strong> {party.kind === 'COMPANY' ? t('clients.kindCompany') : t('clients.kindPerson')}
           {party.documentNumber && (
             <div>
-              <strong>{party.documentType?.code ?? t('contractors.colIdType')}:</strong> {party.documentNumber}
+              <strong>{party.documentType?.code ?? t('contractors.colIdType')}:</strong>{' '}
+              <MaskedDocument partyId={party.id} initialMasked={party.documentNumber} fallback="" />
             </div>
           )}
         </div>

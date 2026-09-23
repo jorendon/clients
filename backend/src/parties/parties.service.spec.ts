@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AddressKind, ClientType, PartyKind } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { CryptoService } from '../common/crypto/crypto.service.js';
 import { normalizeDocumentNumber, PartiesService } from './parties.service.js';
 
 describe('normalizeDocumentNumber', () => {
@@ -25,6 +26,7 @@ describe('PartiesService', () => {
   let clientContractor: Record<string, ReturnType<typeof vi.fn>>;
   let documentType: Record<string, ReturnType<typeof vi.fn>>;
   let tx: Record<string, ReturnType<typeof vi.fn>>;
+  let crypto: Record<string, ReturnType<typeof vi.fn>>;
 
   const cobica = {
     id: 1,
@@ -58,8 +60,9 @@ describe('PartiesService', () => {
       documentType,
       $transaction: vi.fn((cb: (t: unknown) => unknown) => cb(tx)),
     };
+    crypto = { encrypt: vi.fn(x => `ENC_${x}`), decrypt: vi.fn(x => x.replace('ENC_', '')), hashDeterministic: vi.fn(x => `HASH_${x}`) };
     const module: TestingModule = await Test.createTestingModule({
-      providers: [PartiesService, { provide: PrismaService, useValue: prisma }],
+      providers: [PartiesService, { provide: PrismaService, useValue: prisma }, { provide: CryptoService, useValue: crypto }],
     }).compile();
     service = module.get<PartiesService>(PartiesService);
   });
@@ -149,7 +152,7 @@ describe('PartiesService', () => {
     party.findFirst.mockResolvedValue(cobica);
     await service.searchByDocument('82-4839524');
     expect(party.findFirst).toHaveBeenCalledWith({
-      where: { normalizedDocument: '824839524', deletedAt: null },
+      where: { normalizedDocument: 'HASH_824839524', deletedAt: null },
       include: expect.anything(),
     });
   });
@@ -184,8 +187,8 @@ describe('PartiesService', () => {
     expect(party.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         fullName: '5 STAR CLEANING LLC',
-        documentNumber: '87-2773613',
-        normalizedDocument: '872773613',
+        documentNumber: 'ENC_87-2773613',
+        normalizedDocument: 'HASH_872773613',
       }),
     });
   });
@@ -239,7 +242,6 @@ describe('PartiesService', () => {
     party.findUnique.mockResolvedValue(existing); // create: existe activo → conflicto
     party.findFirst
       .mockResolvedValueOnce(existing) // import: re-lookup tras conflicto
-      .mockResolvedValueOnce(existing) // update: findParty
       .mockResolvedValueOnce(null) // update: taken lookup (NOT id lo excluye)
       .mockResolvedValue(existing); // update: findParty final
 

@@ -11,6 +11,8 @@ import type {
   PartyKind,
 } from '../types/party';
 import { getClientTypes, VISIBLE_CLIENT_TYPES } from '../types/party';
+import { Eye, EyeOff } from 'lucide-react';
+import { fetchUnmaskedDocumentNumber } from '../api/parties';
 
 interface PartyFormProps {
   /** Si es true, fuerza isClient y muestra el tipo de cliente */
@@ -76,6 +78,40 @@ export function PartyForm({
     })) ?? [],
   );
   const [nameError, setNameError] = useState<string | null>(null);
+  const [fetchingUnmasked, setFetchingUnmasked] = useState(false);
+  const [unmaskedCache, setUnmaskedCache] = useState<string | null>(null);
+
+  const isMasked = documentNumber.includes('*');
+
+  async function handleToggleReveal() {
+    if (isMasked) {
+      if (unmaskedCache) {
+        setDocumentNumber(unmaskedCache);
+      } else if (initialParty?.id) {
+        setFetchingUnmasked(true);
+        try {
+          const result = await fetchUnmaskedDocumentNumber(initialParty.id);
+          if (result.documentNumber) {
+            setUnmaskedCache(result.documentNumber);
+            setDocumentNumber(result.documentNumber);
+          }
+        } catch (err) {
+          console.error('Failed to reveal document number', err);
+        } finally {
+          setFetchingUnmasked(false);
+        }
+      }
+    } else {
+      setUnmaskedCache(documentNumber);
+      let masked = documentNumber;
+      if (documentNumber.length > 4) {
+        masked = documentNumber.slice(0, -4).replace(/./g, '*') + documentNumber.slice(-4);
+      } else if (documentNumber.length > 0) {
+        masked = documentNumber.replace(/./g, '*');
+      }
+      setDocumentNumber(masked);
+    }
+  }
 
   function updateContact(index: number, patch: Partial<PartyContactInput>) {
     setContacts((prev) => prev.map((c, i) => (i === index ? { ...c, ...patch } : c)));
@@ -128,7 +164,9 @@ export function PartyForm({
         : {}),
       registryNumber: registryNumber.trim() || null,
       documentTypeId: documentTypeId ? Number(documentTypeId) : null,
-      documentNumber: documentNumber.trim() || null,
+      documentNumber: (documentNumber.includes('*') && unmaskedCache) 
+        ? (unmaskedCache.trim() || null) 
+        : (documentNumber.trim() || null),
       email: email.trim() || null,
       phone: phone.trim() || null,
     };
@@ -244,12 +282,41 @@ export function PartyForm({
           </label>
           <label className="field">
             <span>{t('party.documentNumber')}</span>
-            <input
-              type="text"
-              placeholder="82-4839524"
-              value={documentNumber}
-              onChange={(e) => setDocumentNumber(e.target.value)}
-            />
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <input
+                type="text"
+                placeholder="82-4839524"
+                value={documentNumber}
+                onChange={(e) => {
+                  setDocumentNumber(e.target.value);
+                  if (unmaskedCache) setUnmaskedCache(null);
+                }}
+                onFocus={(e) => {
+                  if (documentNumber.includes('*')) {
+                    e.target.select();
+                  }
+                }}
+                style={{ flex: 1 }}
+              />
+              {((initialParty?.id && documentNumber.includes('*')) || unmaskedCache || (!documentNumber.includes('*') && documentNumber.length > 0)) && (
+                <button
+                  type="button"
+                  className="btn small ghost icon-only"
+                  onClick={handleToggleReveal}
+                  disabled={fetchingUnmasked}
+                  title={isMasked ? t('common.reveal', 'Revelar') : t('common.hide', 'Ocultar')}
+                  style={{ padding: '0.2rem' }}
+                >
+                  {fetchingUnmasked ? (
+                    <span className="skeleton" style={{ width: 16, height: 16, borderRadius: '50%' }} />
+                  ) : isMasked ? (
+                    <Eye size={16} />
+                  ) : (
+                    <EyeOff size={16} />
+                  )}
+                </button>
+              )}
+            </div>
           </label>
         </div>
 

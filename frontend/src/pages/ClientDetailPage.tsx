@@ -7,6 +7,7 @@ import { ClientContractorsSection } from '../components/ClientContractorsSection
 import type { ClientDetail, DocumentType } from '../types/party';
 import { getClientTypes } from '../types/party';
 import { getApiErrorMessage } from '../utils/apiErrors';
+import { MaskedDocument } from '../components/MaskedDocument';
 
 export function formatAddress(parts: {
   street?: string | null;
@@ -106,8 +107,8 @@ export function ClientDetailPage({ clientId }: { clientId: number }) {
                 )
                 .join(', ')}`;
             })()}
-            {client.documentType?.code ? ` · ${client.documentType.code}` : ''}
-            {client.documentNumber ? ` ${client.documentNumber}` : ''}
+            {client.documentType?.code ? ` · ${client.documentType.code} ` : ''}
+            {client.documentNumber ? <MaskedDocument partyId={client.id} initialMasked={client.documentNumber} fallback="" /> : ''}
           </p>
         </div>
         <Link to={`/clients/${clientId}/contractors/import`} className="btn">
