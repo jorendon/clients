@@ -11,6 +11,7 @@ import {
 } from '../api/clients';
 import { fetchDocumentTypes } from '../api/documentTypes';
 import { PartyForm } from '../components/PartyForm';
+import { PartyDetailModal } from '../components/PartyDetailModal';
 import type { ClientType, DocumentType, Party, PartyInput } from '../types/party';
 import { getClientTypes, VISIBLE_CLIENT_TYPES } from '../types/party';
 import { getApiErrorMessage } from '../utils/apiErrors';
@@ -34,6 +35,7 @@ export function ClientsPage() {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<'ALL' | ClientType>('ALL');
   const [toast, setToast] = useState<Toast>(null);
+  const [viewingClient, setViewingClient] = useState<Party | null>(null);
 
   const { items: sortedClients, requestSort, getSortIndicator } = useSortableTable(clients, { key: 'fullName', direction: 'asc' }, (item, key) => {
     if (key === 'clientType') return clientTypeLabel(item);
@@ -217,9 +219,9 @@ export function ClientsPage() {
             </thead>
             <tbody>
               {sortedClients.map((client) => (
-                <tr key={client.id}>
-                  <td className="strong">
-                    <Link to={`/clients/${client.id}`}>{client.fullName}</Link>
+                <tr key={client.id} onClick={() => setViewingClient(client)} style={{ cursor: 'pointer' }}>
+                  <td className="strong" onClick={(e) => e.stopPropagation()}>
+                    {client.fullName}
                   </td>
                   <td>
                     <span className={`badge ${client.kind === 'COMPANY' ? 'admin' : 'empleado'}`}>
@@ -232,7 +234,7 @@ export function ClientsPage() {
                     <MaskedDocument partyId={client.id} initialMasked={client.documentNumber} fallback={client.registryNumber ?? '—'} />
                   </td>
                   <td>{client._count?.clientLinks ?? '—'}</td>
-                  <td className="actions">
+                  <td className="actions" onClick={(e) => e.stopPropagation()}>
                     <button 
                       type="button" 
                       className="btn small icon-only" 
@@ -258,22 +260,31 @@ export function ClientsPage() {
       )}
 
       {showForm && (
-        <div className="overlay" role="dialog" aria-modal="true">
-          <PartyForm
-            clientMode
-            initialParty={editing}
-            documentTypes={docTypes}
-            saving={saving}
-            formError={formError}
-            title={editing ? t('party.editClientTitle') : t('party.newClientTitle')}
-            submitLabel={editing ? t('party.saveClient') : t('party.createClient')}
-            onSubmit={handleSubmit}
-            onCancel={() => {
-              setShowForm(false);
-              setEditing(null);
-            }}
-          />
+        <div className="drawer-overlay" role="dialog" aria-modal="true" onClick={() => {
+          setShowForm(false);
+          setEditing(null);
+        }}>
+          <div className="drawer-content" onClick={(e) => e.stopPropagation()}>
+            <PartyForm
+              clientMode
+              initialParty={editing}
+              documentTypes={docTypes}
+              saving={saving}
+              formError={formError}
+              title={editing ? t('party.editClientTitle') : t('party.newClientTitle')}
+              submitLabel={editing ? t('party.saveClient') : t('party.createClient')}
+              onSubmit={handleSubmit}
+              onCancel={() => {
+                setShowForm(false);
+                setEditing(null);
+              }}
+            />
+          </div>
         </div>
+      )}
+
+      {viewingClient && (
+        <PartyDetailModal party={viewingClient} onClose={() => setViewingClient(null)} />
       )}
 
       {confirmUnmark && (

@@ -1,10 +1,13 @@
 import { useTranslation } from 'react-i18next';
-import type { PartyContractor } from '../types/party';
-import { formatAddress } from '../pages/ClientDetailPage';
+import type { Party, PartyAddress } from '../types/party';
 
 import { MaskedDocument } from './MaskedDocument';
 
-export function PartyDetailModal({ party, onClose }: { party: PartyContractor; onClose: () => void }) {
+export function formatAddress(addr: PartyAddress): string {
+  return [addr.street, addr.city, addr.state, addr.zip].filter(Boolean).join(', ');
+}
+
+export function PartyDetailModal({ party, onClose }: { party: Party; onClose: () => void }) {
   const { t } = useTranslation();
   return (
     <div className="overlay" role="dialog" aria-modal="true">

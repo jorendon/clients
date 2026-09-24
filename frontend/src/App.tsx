@@ -25,7 +25,7 @@ import { LoginPage } from './pages/LoginPage';
 import { ClientsPage } from './pages/ClientsPage';
 import { ContractorsPage } from './pages/ContractorsPage';
 import { ClientSettingsPage } from './pages/ClientSettingsPage';
-import { ClientDetailPage } from './pages/ClientDetailPage';
+
 import { ClientsImportPage } from './pages/ClientsImportPage';
 import { ClientContractorsImportPage } from './pages/ClientContractorsImportPage';
 import { DocumentTypesPage } from './pages/DocumentTypesPage';
@@ -33,10 +33,6 @@ import { SettingsPage } from './pages/SettingsPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ProfilePage } from './pages/ProfilePage';
 
-function ClientDetailRoute() {
-  const { id } = useParams<{ id: string }>();
-  return <ClientDetailPage clientId={Number(id)} />;
-}
 
 function ClientContractorsImportRoute() {
   const { id } = useParams<{ id: string }>();
@@ -250,7 +246,7 @@ export function Shell() {
           <Route path="/contractors" element={<Protected><ContractorsPage /></Protected>} />
           <Route path="/client-settings" element={<Protected><ClientSettingsPage /></Protected>} />
           <Route path="/clients/import" element={<Protected><ClientsImportPage /></Protected>} />
-          <Route path="/clients/:id" element={<Protected><ClientDetailRoute /></Protected>} />
+
           <Route
             path="/clients/:id/contractors/import"
             element={<Protected><ClientContractorsImportRoute /></Protected>}

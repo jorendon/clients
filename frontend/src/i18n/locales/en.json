@@ -12,6 +12,8 @@
     "usersDesc": "Invite and manage your team's access to the system.",
     "import": "Bulk Import",
     "importDesc": "Import multiple records from a CSV or Excel file.",
+    "importContractors": "Contractors Bulk Import",
+    "importContractorsDesc": "Upload the layout in Excel or CSV format.",
     "quickActions": "Quick Actions"
   },
   "nav": {
@@ -169,6 +171,11 @@
       "noAddresses": "No addresses registered.",
       "noContractors": "No associated contractors.",
       "importContractors": "Bulk Upload",
+      "newContractor": "New contractor",
+      "confirmBulkDissociateTitle": "Remove contractors",
+      "confirmBulkDissociate": "Are you sure you want to remove {{count}} selected contractors?",
+      "dissociateSelected": "Remove selected ({{count}})",
+      "creatingContractor": "Create and associate contractor",
       "associate": "Associate contractor",
       "associatePlaceholder": "Search and associate contractor…",
       "filterPlaceholder": "Filter associated contractors…",

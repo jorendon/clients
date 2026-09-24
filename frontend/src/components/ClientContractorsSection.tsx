@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  associateContractor,
   dissociateContractor,
   fetchClientContractors,
 } from '../api/clients';
-import { updateContractor } from '../api/contractors';
+import { createContractor, updateContractor } from '../api/contractors';
 import { fetchDocumentTypes } from '../api/documentTypes';
 import type { DocumentType, PartyContractor, PartyInput } from '../types/party';
 import { getApiErrorMessage } from '../utils/apiErrors';
 import { useSortableTable } from '../hooks/useSortableTable';
-import { Edit2, Unlink, Download, Upload } from 'lucide-react';
+import { Pencil, UserX, Download, Upload, Plus, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Papa from 'papaparse';
 import { PartyDetailModal } from './PartyDetailModal';
@@ -30,6 +31,11 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
   const [formError, setFormError] = useState<string | null>(null);
   const [contractorToDissociate, setContractorToDissociate] = useState<PartyContractor | null>(null);
 
+  const [creatingParty, setCreatingParty] = useState(false);
+  const [selectedContractors, setSelectedContractors] = useState<Set<number>>(new Set());
+  const [bulkDissociating, setBulkDissociating] = useState(false);
+  const [showBulkDissociateConfirm, setShowBulkDissociateConfirm] = useState(false);
+
   const { items: sortedContractors, requestSort, getSortIndicator } = useSortableTable(
     contractors.filter(c => {
       const matchSearch = localSearch ? (c.fullName.toLowerCase().includes(localSearch.toLowerCase()) || (c.documentNumber && c.documentNumber.includes(localSearch))) : true;
@@ -38,6 +44,24 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
     }),
     { key: 'fullName', direction: 'asc' }
   );
+
+  const allSelected = sortedContractors.length > 0 && selectedContractors.size === sortedContractors.length;
+  const someSelected = selectedContractors.size > 0 && selectedContractors.size < sortedContractors.length;
+
+  function toggleAll() {
+    if (allSelected) {
+      setSelectedContractors(new Set());
+    } else {
+      setSelectedContractors(new Set(sortedContractors.map(c => c.id)));
+    }
+  }
+
+  function toggleOne(id: number) {
+    const next = new Set(selectedContractors);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedContractors(next);
+  }
 
   async function load() {
     setLoading(true);
@@ -86,6 +110,44 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
     }
   }
 
+  async function handleCreateContractor(input: PartyInput) {
+    setSaving(true);
+    setFormError(null);
+    try {
+      const newContractor = await createContractor(input);
+      await associateContractor(clientId, newContractor.id);
+      setCreatingParty(false);
+      load();
+    } catch (err) {
+      setFormError(getApiErrorMessage(t, err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handleBulkDissociateClick() {
+    if (selectedContractors.size === 0) return;
+    setShowBulkDissociateConfirm(true);
+  }
+
+  async function executeBulkDissociate() {
+    setBulkDissociating(true);
+    setError(null);
+    try {
+      await Promise.all(
+        Array.from(selectedContractors).map(contractorId => 
+          dissociateContractor(clientId, contractorId)
+        )
+      );
+      setSelectedContractors(new Set());
+      setShowBulkDissociateConfirm(false);
+      load();
+    } catch (err) {
+      setError(getApiErrorMessage(t, err));
+      setBulkDissociating(false);
+    }
+  }
+
   function handleExport() {
     const data = sortedContractors.map(c => ({
       Nombre: c.fullName,
@@ -112,10 +174,16 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
         <h2 style={{ margin: 0 }}>
           {t('clients.detail.contractors')} ({contractors.length})
         </h2>
-        <Link to={`/clients/${clientId}/contractors/import`} className="btn secondary small">
-          <span className="side-icon" aria-hidden="true" style={{ marginRight: '0.5rem' }}><Upload size={16} /></span>
-          {t('clients.detail.importContractors', 'Carga Masiva')}
-        </Link>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button type="button" className="btn secondary small" onClick={() => setCreatingParty(true)}>
+            <span className="side-icon" aria-hidden="true" style={{ marginRight: '0.5rem' }}><Plus size={16} /></span>
+            {t('clients.detail.newContractor', 'Nuevo contratista')}
+          </button>
+          <Link to={`/clients/${clientId}/contractors/import`} className="btn secondary small">
+            <span className="side-icon" aria-hidden="true" style={{ marginRight: '0.5rem' }}><Upload size={16} /></span>
+            {t('clients.detail.importContractors', 'Carga Masiva')}
+          </Link>
+        </div>
       </header>
 
       {error && (
@@ -149,6 +217,18 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
               <option value="COMPLETE">{t('contractors.filterComplete', 'Completos')}</option>
               <option value="INCOMPLETE">{t('contractors.filterIncomplete', 'Incompletos')}</option>
             </select>
+            {selectedContractors.size > 0 && (
+              <button
+                type="button"
+                className="btn danger ghost"
+                onClick={handleBulkDissociateClick}
+                disabled={bulkDissociating}
+                style={{ display: 'inline-flex', gap: '0.4rem', alignItems: 'center' }}
+              >
+                <Trash2 size={16} />
+                {t('clients.detail.dissociateSelected', { count: selectedContractors.size, defaultValue: `Quitar seleccionados (${selectedContractors.size})` })}
+              </button>
+            )}
             <button type="button" className="btn ghost" onClick={handleExport} title={t('common.exportCsv', 'Exportar a CSV')} style={{ display: 'inline-flex', gap: '0.4rem', alignItems: 'center' }}>
               <Download size={16} />
               {t('common.export', 'Exportar')}
@@ -158,6 +238,17 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
             <table className="table">
               <thead>
                 <tr>
+                  <th style={{ width: '40px', textAlign: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      ref={input => {
+                        if (input) input.indeterminate = someSelected;
+                      }}
+                      onChange={toggleAll}
+                      aria-label="Seleccionar todos"
+                    />
+                  </th>
                   <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => requestSort('fullName')}>
                     {t('contractors.colName')}{getSortIndicator('fullName')}
                   </th>
@@ -173,6 +264,14 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
               <tbody>
                 {sortedContractors.map((contractor) => (
                   <tr key={contractor.id} onClick={() => setViewingParty(contractor)} style={{ cursor: 'pointer' }}>
+                    <td onClick={(e) => e.stopPropagation()} style={{ textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedContractors.has(contractor.id)}
+                        onChange={() => toggleOne(contractor.id)}
+                        aria-label="Seleccionar contratista"
+                      />
+                    </td>
                     <td className="strong">
                       {contractor.fullName}{' '}
                       {contractor.isClient && (
@@ -194,12 +293,12 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
                       <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                         <button
                           type="button"
-                          className="btn small ghost icon-only"
+                          className="btn small icon-only"
                           onClick={() => setEditingParty(contractor)}
                           data-tooltip={t('common.edit')}
                           aria-label={t('common.edit')}
                         >
-                          <Edit2 size={16} />
+                          <Pencil size={16} />
                         </button>
                         <button
                           type="button"
@@ -208,7 +307,7 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
                           data-tooltip={t('clients.detail.dissociate')}
                           aria-label={t('clients.detail.dissociate')}
                         >
-                          <Unlink size={16} />
+                          <UserX size={16} />
                         </button>
                       </div>
                     </td>
@@ -241,6 +340,22 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
         </div>
       )}
 
+      {creatingParty && (
+        <div className="drawer-overlay" role="dialog" aria-modal="true" onClick={() => setCreatingParty(false)}>
+          <div className="drawer-content" onClick={(e) => e.stopPropagation()}>
+            <PartyForm
+              documentTypes={docTypes}
+              saving={saving}
+              formError={formError}
+              submitLabel={t('party.createContractor')}
+              title={t('clients.detail.creatingContractor', 'Crear y asociar contratista')}
+              onSubmit={handleCreateContractor}
+              onCancel={() => setCreatingParty(false)}
+            />
+          </div>
+        </div>
+      )}
+
       {contractorToDissociate && (
         <div className="overlay" role="alertdialog" aria-modal="true" aria-label={t('clients.detail.confirmDissociateTitle', 'Quitar contratista')}>
           <div className="card" style={{ maxWidth: '400px' }}>
@@ -256,6 +371,26 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
               </button>
               <button type="button" className="btn danger" onClick={handleDissociateConfirm}>
                 {t('clients.detail.dissociate', 'Quitar')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showBulkDissociateConfirm && (
+        <div className="overlay" role="alertdialog" aria-modal="true" aria-label={t('clients.detail.confirmBulkDissociateTitle', 'Quitar contratistas')}>
+          <div className="card" style={{ maxWidth: '400px' }}>
+            <h2 style={{ marginTop: 0 }}>
+              {t('clients.detail.confirmBulkDissociateTitle', 'Quitar contratistas')}
+            </h2>
+            <p className="muted" style={{ marginBottom: '1.5rem' }}>
+              {t('clients.detail.confirmBulkDissociate', { count: selectedContractors.size, defaultValue: `¿Estás seguro de quitar ${selectedContractors.size} contratistas seleccionados?` })}
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button type="button" className="btn ghost" onClick={() => setShowBulkDissociateConfirm(false)} disabled={bulkDissociating}>
+                {t('common.cancel', 'Cancelar')}
+              </button>
+              <button type="button" className="btn danger" onClick={executeBulkDissociate} disabled={bulkDissociating}>
+                {t('clients.detail.dissociateSelected', { count: selectedContractors.size, defaultValue: `Quitar seleccionados (${selectedContractors.size})` })}
               </button>
             </div>
           </div>

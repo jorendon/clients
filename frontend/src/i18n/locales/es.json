@@ -12,6 +12,8 @@
     "usersDesc": "Invitar y administrar el acceso de tu equipo al sistema.",
     "import": "Carga Masiva",
     "importDesc": "Importar múltiples registros desde un archivo CSV o Excel.",
+    "importContractors": "Carga Masiva (Contratistas)",
+    "importContractorsDesc": "Sube el layout en Excel o CSV.",
     "quickActions": "Acciones Rápidas"
   },
   "nav": {
@@ -168,6 +170,11 @@
       "noAddresses": "Sin direcciones registradas.",
       "noContractors": "Sin contratistas asociadas.",
       "importContractors": "Carga Masiva",
+      "newContractor": "Nuevo contratista",
+      "confirmBulkDissociateTitle": "Quitar contratistas",
+      "confirmBulkDissociate": "¿Estás seguro de quitar {{count}} contratistas seleccionados?",
+      "dissociateSelected": "Quitar seleccionados ({{count}})",
+      "creatingContractor": "Crear y asociar contratista",
       "associate": "Asociar contratista",
       "associatePlaceholder": "Buscar y asociar contratista…",
       "filterPlaceholder": "Filtrar contratistas asociados…",

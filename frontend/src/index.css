@@ -1564,13 +1564,24 @@ tr.row-error {
 }
 
 .drawer-content {
-  background: var(--bg);
+  background: var(--card);
   width: min(800px, 100vw);
   height: 100vh;
   overflow-y: auto;
   animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: -4px 0 16px rgba(9, 30, 66, 0.15);
+  padding: 0;
+}
+
+.drawer-content .card.form {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   padding: 2rem;
+  background: transparent;
 }
 
 @keyframes slideInRight {
