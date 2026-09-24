@@ -51,10 +51,10 @@ export function maskDocumentNumber(doc?: string | null): string | undefined {
   return hiddenPart + visiblePart;
 }
 
-function maskParty<T extends { documentNumber?: string | null; contacts?: { documentNumber?: string | null }[] }>(party: T, crypto: CryptoService): T {
+function maskParty<T extends { documentNumber?: string | null; contacts?: { documentNumber?: string | null }[] }>(party: T, crypto: CryptoService, skipMasking = false): T {
   if (party.documentNumber) {
     const decrypted = crypto.decrypt(party.documentNumber);
-    (party as any).documentNumber = maskDocumentNumber(decrypted);
+    (party as any).documentNumber = skipMasking ? decrypted : maskDocumentNumber(decrypted);
   }
   if (party.contacts) {
     party.contacts.forEach((c: any) => {
@@ -373,14 +373,14 @@ export class PartiesService {
     return this.findParty(id);
   }
 
-  async listContractors(clientId: number) {
+  async listContractors(clientId: number, unmasked = false) {
     await this.findClientDetail(clientId);
     const links = await this.prisma.clientContractor.findMany({
       where: { clientId },
       include: { contractor: { include: detailInclude } },
       orderBy: { assignedAt: 'desc' },
     });
-    return links.map((link) => ({ ...maskParty(link.contractor, this.crypto), assignedAt: link.assignedAt }));
+    return links.map((link) => ({ ...maskParty(link.contractor, this.crypto, unmasked), assignedAt: link.assignedAt }));
   }
 
   async getUnmaskedDocumentNumber(id: number) {

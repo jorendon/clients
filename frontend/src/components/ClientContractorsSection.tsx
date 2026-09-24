@@ -148,24 +148,32 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
     }
   }
 
-  function handleExport() {
-    const data = sortedContractors.map(c => ({
-      Nombre: c.fullName,
-      Tipo: c.kind === 'COMPANY' ? 'Empresa' : 'Persona',
-      TipoDocumento: c.documentType?.code || '',
-      NumeroDocumento: c.documentNumber || '',
-      Email: c.email || '',
-      Telefono: c.phone || '',
-      Estado: c.isComplete ? t('contractors.statusComplete', 'Completo') : t('contractors.statusIncomplete', 'Incompleto')
-    }));
-    const csv = Papa.unparse(data);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `contratistas_${statusFilter.toLowerCase()}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  async function handleExport() {
+    setBulkDissociating(true);
+    try {
+      const exportDataList = await fetchClientContractors(clientId, true);
+      const data = exportDataList.map(c => ({
+        Nombre: c.fullName,
+        Tipo: c.kind === 'COMPANY' ? 'Empresa' : 'Persona',
+        TipoDocumento: c.documentType?.code || '',
+        NumeroDocumento: c.documentNumber || '',
+        Email: c.email || '',
+        Telefono: c.phone || '',
+        Estado: c.isComplete ? t('contractors.statusComplete', 'Completo') : t('contractors.statusIncomplete', 'Incompleto')
+      }));
+      const csv = Papa.unparse(data);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `contratistas_${statusFilter.toLowerCase()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(getApiErrorMessage(t, err));
+    } finally {
+      setBulkDissociating(false);
+    }
   }
 
   return (

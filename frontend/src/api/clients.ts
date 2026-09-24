@@ -37,8 +37,10 @@ export async function remarkClient(id: number): Promise<ClientDetail> {
   return data;
 }
 
-export async function fetchClientContractors(clientId: number): Promise<PartyContractor[]> {
-  const { data } = await apiClient.get<PartyContractor[]>(`/clients/${clientId}/contractors`);
+export async function fetchClientContractors(clientId: number, unmasked?: boolean): Promise<PartyContractor[]> {
+  const { data } = await apiClient.get<PartyContractor[]>(`/clients/${clientId}/contractors`, {
+    params: { unmasked: unmasked ? 'true' : undefined },
+  });
   return data;
 }
 

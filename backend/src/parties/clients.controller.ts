@@ -54,8 +54,11 @@ export class ClientsController {
   }
 
   @Get(':id/contractors')
-  listContractors(@Param('id', ParseIntPipe) id: number) {
-    return this.partiesService.listContractors(id);
+  listContractors(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('unmasked') unmasked?: string,
+  ) {
+    return this.partiesService.listContractors(id, unmasked === 'true');
   }
 
   @Post(':id/contractors')
