@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, Upload } from 'lucide-react';
 import { checkContractorDuplicates, importClientContractors, type ImportReport, type DuplicateResult } from '../api/import';
 import { ImportStagingTable, type StagingColumn } from '../components/ImportStagingTable';
 import { ImportHelpModal } from '../components/ImportHelpModal';
@@ -75,7 +75,6 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
   const [uploadType, setUploadType] = useState<'full' | 'names'>('full');
   
   const [duplicateConflicts, setDuplicateConflicts] = useState<DuplicateResult[] | null>(null);
-  const [resolutions, setResolutions] = useState<Record<string, number | 'new'>>({});
 
   useEffect(() => {
     fetchDocumentTypes().then(setDocTypes).catch(console.error);
@@ -109,11 +108,36 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
   );
 
   const activeColumns = useMemo(() => {
+    let cols = columns;
     if (uploadType === 'names') {
-      return columns.filter(c => c.key === 'name');
+      cols = columns.filter(c => c.key === 'name');
     }
-    return columns;
-  }, [columns, uploadType]);
+    
+    if (duplicateConflicts && duplicateConflicts.length > 0) {
+      cols = [
+        ...cols,
+        {
+          key: 'mergeId',
+          label: t('import.colAction', 'Acción'),
+          kind: 'dynamic-select',
+          width: '260px',
+          getOptions: (row) => {
+            const conflict = duplicateConflicts.find(c => c.name === row.name);
+            if (!conflict) return [{ value: 'new', label: t('import.actionNew', 'Crear como nuevo (Incompleto)') }];
+            
+            return [
+              { value: 'new', label: t('import.actionNew', 'Crear como nuevo (Incompleto)') },
+              ...conflict.matches.map(m => ({
+                value: String(m.id),
+                label: `${t('import.actionLink', 'Vincular con:')} ${m.fullName} ${m.documentNumber ? `(${m.documentNumber})` : ''}`
+              }))
+            ];
+          }
+        } as StagingColumn<StagedContractorRow>
+      ];
+    }
+    return cols;
+  }, [columns, uploadType, duplicateConflicts, t]);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -170,8 +194,27 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
         return true;
       });
 
-      if (deduplicated.length === 0) throw new Error('empty');
-      setRows(deduplicated);
+      let finalRows = deduplicated;
+
+      if (uploadType === 'names') {
+        const names = deduplicated.map((r) => r.name);
+        try {
+          const results = await checkContractorDuplicates(clientId, names);
+          const withMatches = results.filter((r) => r.matches.length > 0);
+          setDuplicateConflicts(withMatches);
+          
+          finalRows = deduplicated.map(r => {
+            const hasConflict = withMatches.some(m => m.name === r.name);
+            return hasConflict ? { ...r, mergeId: 'new' as any } : r;
+          });
+        } catch (err) {
+          console.error('Error checking duplicates', err);
+        }
+      } else {
+        setDuplicateConflicts(null);
+      }
+
+      setRows(finalRows);
       setFileName(file.name);
       setSearch('');
     } catch (error) {
@@ -182,6 +225,7 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
       );
       setRows([]);
       setFileName('');
+      setDuplicateConflicts(null);
     }
   }
 
@@ -208,44 +252,14 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
     setProcessing(true);
     setProcessError(null);
     try {
-      if (uploadType === 'names') {
-        const names = rows.map((r) => r.name);
-        const results = await checkContractorDuplicates(clientId, names);
-        const withMatches = results.filter((r) => r.matches.length > 0);
-        
-        if (withMatches.length > 0) {
-          setDuplicateConflicts(withMatches);
-          // Pre-fill resolutions with 'new' or first match? Let's just require explicit or default to 'new'
-          const initialRes: Record<string, number | 'new'> = {};
-          for (const conflict of withMatches) {
-            initialRes[conflict.name] = 'new';
-          }
-          setResolutions(initialRes);
-          setProcessing(false);
-          return; // Wait for user resolution
+      const finalRows = rows.map(r => {
+        if ((r.mergeId as any) === 'new' || !r.mergeId) {
+          const { mergeId, ...rest } = r;
+          return rest;
         }
-      }
-      
-      await executeImport(rows);
-    } catch (error) {
-      setProcessError(getApiErrorMessage(t, error));
-      setProcessing(false);
-    }
-  }
-
-  async function handleExecuteResolved() {
-    const finalRows = rows.map((row) => {
-      const res = resolutions[row.name];
-      if (res && res !== 'new') {
-        return { ...row, mergeId: res };
-      }
-      return row;
-    });
-    setProcessing(true);
-    setProcessError(null);
-    try {
-      await executeImport(finalRows);
-      setDuplicateConflicts(null);
+        return { ...r, mergeId: Number(r.mergeId) };
+      });
+      await executeImport(finalRows as StagedContractorRow[]);
     } catch (error) {
       setProcessError(getApiErrorMessage(t, error));
       setProcessing(false);
@@ -319,60 +333,7 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
         )}
       </section>
 
-      {duplicateConflicts && !report && (
-        <section className="card">
-          <h2>{t('import.duplicatesTitle', 'Revisión de Duplicados')}</h2>
-          <p className="muted">{t('import.duplicatesSubtitle', 'Hemos encontrado nombres similares en tu base de datos. Por favor elige si deseas crear uno nuevo o asociar al existente.')}</p>
-          <div className="table-wrap" style={{ marginTop: '1rem' }}>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>{t('import.colNameImport', 'Nombre a Importar')}</th>
-                  <th>{t('import.colAction', 'Acción')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {duplicateConflicts.map((conflict) => (
-                  <tr key={conflict.name}>
-                    <td><strong>{conflict.name}</strong></td>
-                    <td>
-                      <select 
-                        value={resolutions[conflict.name] || 'new'}
-                        onChange={(e) => {
-                          const val = e.target.value === 'new' ? 'new' : Number(e.target.value);
-                          setResolutions(prev => ({ ...prev, [conflict.name]: val }));
-                        }}
-                      >
-                        <option value="new">{t('import.actionNew', 'Crear como nuevo (Incompleto)')}</option>
-                        {conflict.matches.map(m => (
-                          <option key={m.id} value={m.id}>
-                            {t('import.actionLink', 'Vincular con:')} {m.fullName} {m.documentNumber ? `(${m.documentNumber})` : ''}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="form-actions sticky-bar" style={{ marginTop: '1rem' }}>
-            <button type="button" className="btn ghost" onClick={() => setDuplicateConflicts(null)}>
-              {t('common.cancel')}
-            </button>
-            <button
-              type="button"
-              className="btn primary"
-              disabled={processing}
-              onClick={handleExecuteResolved}
-            >
-              {processing ? t('common.saving') : t('import.confirmAndImport', 'Confirmar e Importar')}
-            </button>
-          </div>
-        </section>
-      )}
-
-      {rows.length > 0 && !report && !duplicateConflicts && (
+      {rows.length > 0 && !report && (
         <>
           <ImportStagingTable
             rows={rows}
@@ -395,10 +356,19 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
           <div className="form-actions sticky-bar">
             <button
               type="button"
-              className="btn primary"
+              className="btn"
               disabled={processing || rows.length === 0}
               onClick={handleProcess}
+              style={{
+                backgroundColor: 'var(--ok)',
+                color: 'white',
+                borderColor: 'var(--ok)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
             >
+              <Upload size={18} />
               {processing ? t('common.saving') : t('import.process', { count: rows.length })}
             </button>
           </div>

@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, Upload } from 'lucide-react';
 import { importClients, type ImportReport } from '../api/import';
 import { ImportStagingTable, type StagingColumn } from '../components/ImportStagingTable';
 import { ImportHelpModal } from '../components/ImportHelpModal';
@@ -254,10 +254,19 @@ export function ClientsImportPage() {
           <div className="form-actions sticky-bar">
             <button
               type="button"
-              className="btn primary"
+              className="btn"
               disabled={processing || rows.length === 0}
               onClick={handleProcess}
+              style={{
+                backgroundColor: 'var(--ok)',
+                color: 'white',
+                borderColor: 'var(--ok)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
             >
+              <Upload size={18} />
               {processing ? t('common.saving') : t('import.process', { count: rows.length })}
             </button>
           </div>

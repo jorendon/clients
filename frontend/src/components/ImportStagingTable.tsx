@@ -5,8 +5,9 @@ import { Trash2 } from 'lucide-react';
 export interface StagingColumn<Row> {
   key: keyof Row;
   label: string;
-  kind?: 'text' | 'select' | 'multiselect';
+  kind?: 'text' | 'select' | 'multiselect' | 'dynamic-select';
   options?: { value: string; label: string }[];
+  getOptions?: (row: Row) => { value: string; label: string }[];
   width?: string;
 }
 
@@ -216,7 +217,7 @@ export function ImportStagingTable<Row extends { key: number }>({
                           );
                         })}
                       </span>
-                    ) : col.kind === 'select' && col.options ? (
+                    ) : (col.kind === 'select' && col.options) || (col.kind === 'dynamic-select' && col.getOptions) ? (
                       <select
                          style={{ width: '100%', minWidth: '120px' }}
                         value={String(row[col.key] ?? '')}
@@ -224,7 +225,7 @@ export function ImportStagingTable<Row extends { key: number }>({
                         aria-label={col.label}
                       >
                         <option value="">—</option>
-                        {col.options.map((opt) => (
+                        {(col.kind === 'dynamic-select' ? col.getOptions!(row) : col.options!).map((opt) => (
                           <option key={opt.value} value={opt.value}>
                             {opt.label}
                           </option>
