@@ -177,6 +177,9 @@ export function Shell() {
         {collapsed && flyoutLock && (
           <div className="sidebar-backdrop" onClick={() => setFlyoutLock(false)} />
         )}
+        {!collapsed && (
+          <div className="sidebar-backdrop mobile-only" onClick={() => setCollapsed(true)} />
+        )}
 
         <aside 
           className={`sidebar${flyoutLock ? ' flyout-open' : ''}`} 
@@ -209,6 +212,7 @@ export function Shell() {
                             className={({ isActive }) => `side-link sub-link${isActive ? ' active' : ''}`}
                             onClick={() => {
                               if (collapsed) setFlyoutLock(false);
+                              if (window.innerWidth <= 900) setCollapsed(true);
                             }}
                           >
                             <span className="side-icon" aria-hidden="true">{child.icon}</span>
@@ -229,6 +233,7 @@ export function Shell() {
                   className={({ isActive }) => `side-link${isActive ? ' active' : ''}`}
                   onClick={() => {
                     if (collapsed) setFlyoutLock(false);
+                    if (window.innerWidth <= 900) setCollapsed(true);
                   }}
                 >
                   <span className="side-icon" aria-hidden="true">{group.icon}</span>

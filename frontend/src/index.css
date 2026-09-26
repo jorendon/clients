@@ -253,52 +253,86 @@ body {
   margin-top: auto;
 }
 
-@media (max-width: 900px) {
-  .layout {
-    flex-direction: column;
-  }
+.sidebar-backdrop.mobile-only {
+  display: none;
+}
 
-  .sidebar {
-    width: auto;
+@media (max-width: 900px) {
+  .global-header {
     height: auto;
-    position: static;
-    flex-direction: column;
+    min-height: 56px;
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap;
     gap: 0.75rem;
   }
 
-  .side-nav {
-    flex-direction: row;
-    overflow-x: auto;
+  .header-left, .header-right {
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: flex-start;
+    gap: 0.5rem;
   }
 
-  .side-link {
-    white-space: nowrap;
-  }
-
-  .side-foot {
-    grid-template-columns: auto auto auto;
-    align-items: center;
-    border-top: 0;
-    padding-top: 0;
-  }
-
-  .layout.rail .sidebar {
-    position: static;
-    width: auto;
-    height: auto;
-    box-shadow: none;
-  }
-
-  .layout.rail .main {
-    margin-left: 0;
-  }
-
-  .app-wrapper.rail .side-label {
-    display: inline;
-  }
-
-  .side-toggle {
+  .brand-text {
     display: none;
+  }
+
+  .sidebar-backdrop.mobile-only {
+    display: block;
+    z-index: 90;
+    background: rgba(9, 30, 66, 0.54);
+    top: 0;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    height: 100vh;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 2px 0 12px rgba(0,0,0,0.2);
+    padding: 1rem;
+  }
+
+  .app-wrapper:not(.rail) .sidebar {
+    transform: translateX(0);
+  }
+
+  .app-wrapper.rail .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebar-hover-trigger {
+    display: none;
+  }
+
+  .main {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbar input[type='search'],
+  .toolbar select,
+  .toolbar button {
+    width: 100%;
+  }
+
+  .btn-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-row .btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 
@@ -1025,11 +1059,6 @@ tr.row-error {
   .page-header {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .table th:nth-child(2),
-  .table td:nth-child(2) {
-    display: none;
   }
 }
 
