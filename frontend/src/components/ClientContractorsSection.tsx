@@ -4,21 +4,27 @@ import {
   associateContractor,
   dissociateContractor,
   fetchClientContractors,
+  fetchClientDetail,
 } from '../api/clients';
+import { ExportModal, type ExportFormat } from './ExportModal';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import { createContractor, updateContractor } from '../api/contractors';
 import { fetchDocumentTypes } from '../api/documentTypes';
 import type { DocumentType, PartyContractor, PartyInput } from '../types/party';
 import { getApiErrorMessage } from '../utils/apiErrors';
 import { useSortableTable } from '../hooks/useSortableTable';
+import { useBranding } from '../branding/BrandingContext';
 import { Pencil, UserX, Download, Upload, Plus, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import Papa from 'papaparse';
 import { PartyDetailModal } from './PartyDetailModal';
 import { PartyForm } from './PartyForm';
 import { MaskedDocument } from './MaskedDocument';
 
 export function ClientContractorsSection({ clientId }: { clientId: number }) {
   const { t } = useTranslation();
+  const { branding } = useBranding();
   const [contractors, setContractors] = useState<PartyContractor[]>([]);
   const [docTypes, setDocTypes] = useState<DocumentType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +41,8 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
   const [selectedContractors, setSelectedContractors] = useState<Set<number>>(new Set());
   const [bulkDissociating, setBulkDissociating] = useState(false);
   const [showBulkDissociateConfirm, setShowBulkDissociateConfirm] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [clientName, setClientName] = useState<string>('');
 
   const { items: sortedContractors, requestSort, getSortIndicator } = useSortableTable(
     contractors.filter(c => {
@@ -66,12 +74,14 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
   async function load() {
     setLoading(true);
     try {
-      const [contractorsData, docTypesData] = await Promise.all([
+      const [contractorsData, docTypesData, clientData] = await Promise.all([
         fetchClientContractors(clientId),
-        fetchDocumentTypes()
+        fetchDocumentTypes(),
+        fetchClientDetail(clientId)
       ]);
       setContractors(contractorsData);
       setDocTypes(docTypesData);
+      setClientName(clientData.fullName);
     } catch (err) {
       setError(getApiErrorMessage(t, err));
     } finally {
@@ -148,27 +158,74 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
     }
   }
 
-  async function handleExport() {
+  async function handleExportConfirm(format: ExportFormat, selectedColumns: string[]) {
     setBulkDissociating(true);
     try {
       const exportDataList = await fetchClientContractors(clientId, true);
-      const data = exportDataList.map(c => ({
-        Nombre: c.fullName,
-        Tipo: c.kind === 'COMPANY' ? 'Empresa' : 'Persona',
-        TipoDocumento: c.documentType?.code || '',
-        NumeroDocumento: c.documentNumber || '',
-        Email: c.email || '',
-        Telefono: c.phone || '',
-        Estado: c.isComplete ? t('contractors.statusComplete', 'Completo') : t('contractors.statusIncomplete', 'Incompleto')
-      }));
-      const csv = Papa.unparse(data);
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `contratistas_${statusFilter.toLowerCase()}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
+      
+      // Filtramos según el estado y búsqueda actual
+      const filteredDataList = exportDataList.filter(c => {
+        const matchSearch = localSearch ? (c.fullName.toLowerCase().includes(localSearch.toLowerCase()) || (c.documentNumber && c.documentNumber.includes(localSearch))) : true;
+        const matchStatus = statusFilter === 'ALL' ? true : (statusFilter === 'COMPLETE' ? c.isComplete : !c.isComplete);
+        return matchSearch && matchStatus;
+      });
+
+      const data = filteredDataList.map(c => {
+        const row: Record<string, string> = {};
+        if (selectedColumns.includes('Nombre')) row[t('contractors.colName', 'Nombre')] = c.fullName;
+        if (selectedColumns.includes('Tipo')) row[t('contractors.colKind', 'Tipo')] = c.kind === 'COMPANY' ? t('clients.kindCompany', 'Empresa') : t('clients.kindPerson', 'Persona');
+        if (selectedColumns.includes('TipoDocumento')) row[t('contractors.colIdType', 'Tipo de Documento')] = c.documentType?.code || '';
+        if (selectedColumns.includes('NumeroDocumento')) row[t('contractors.colId', 'Número de Documento')] = c.documentNumber || '';
+        if (selectedColumns.includes('Email')) row[t('party.email', 'Email')] = c.email || '';
+        if (selectedColumns.includes('Telefono')) row[t('party.phone', 'Teléfono')] = c.phone || '';
+        if (selectedColumns.includes('Address')) {
+          const addr = c.addresses?.find(a => a.kind === 'FISCAL') || c.addresses?.[0];
+          row[t('import.colAddress', 'Dirección')] = addr ? [addr.street, addr.city, addr.state, addr.zip].filter(Boolean).join(', ') : '';
+        }
+        if (selectedColumns.includes('Estado')) row[t('docTypes.colStatus', 'Estado')] = c.isComplete ? t('contractors.statusComplete', 'Completo') : t('contractors.statusIncomplete', 'Incompleto');
+        return row;
+      });
+
+      const safeClientName = clientName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const dateStr = new Date().toISOString().split('T')[0];
+      const baseFileName = `${safeClientName}_${dateStr}_${statusFilter.toLowerCase()}`;
+
+      if (format === 'EXCEL') {
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Contratistas');
+        XLSX.writeFile(wb, `${baseFileName}.xlsx`);
+      } else if (format === 'PDF') {
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        
+        doc.setFontSize(18);
+        doc.setTextColor(40, 40, 40);
+        doc.text(clientName, pageWidth / 2, 22, { align: 'center' });
+        
+        doc.setFontSize(11);
+        doc.setTextColor(100, 100, 100);
+        const filterText = statusFilter === 'ALL' ? t('contractors.filterAll', 'Todos los estados') : (statusFilter === 'COMPLETE' ? t('contractors.filterComplete', 'Completos') : t('contractors.filterIncomplete', 'Incompletos'));
+        doc.text(`${t('export.title', 'Exportar Contratistas')} (${filterText})`, pageWidth / 2, 30, { align: 'center' });
+        
+        if (data.length > 0) {
+          const headers = Object.keys(data[0]);
+          const body = data.map(row => headers.map(h => row[h]));
+          
+          autoTable(doc, {
+            startY: 38,
+            head: [headers],
+            body: body,
+            theme: 'striped',
+            headStyles: { fillColor: branding.sidebarColor },
+            styles: { fontSize: 9, cellPadding: 4 },
+          });
+        } else {
+          doc.text(t('clients.detail.noContractors', 'No hay datos'), pageWidth / 2, 45, { align: 'center' });
+        }
+        
+        doc.save(`${baseFileName}.pdf`);
+      }
     } catch (err) {
       setError(getApiErrorMessage(t, err));
     } finally {
@@ -183,7 +240,7 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
           {t('clients.detail.contractors')} ({contractors.length})
         </h2>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button type="button" className="btn secondary small" onClick={() => setCreatingParty(true)}>
+          <button type="button" className="btn success small" onClick={() => setCreatingParty(true)}>
             <span className="side-icon" aria-hidden="true" style={{ marginRight: '0.5rem' }}><Plus size={16} /></span>
             {t('clients.detail.newContractor', 'Nuevo contratista')}
           </button>
@@ -237,7 +294,7 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
                 {t('clients.detail.dissociateSelected', { count: selectedContractors.size, defaultValue: `Quitar seleccionados (${selectedContractors.size})` })}
               </button>
             )}
-            <button type="button" className="btn ghost" onClick={handleExport} title={t('common.exportCsv', 'Exportar a CSV')} style={{ display: 'inline-flex', gap: '0.4rem', alignItems: 'center' }}>
+            <button type="button" className="btn ghost" onClick={() => setShowExportModal(true)} title={t('export.title', 'Exportar')} style={{ display: 'inline-flex', gap: '0.4rem', alignItems: 'center' }}>
               <Download size={16} />
               {t('common.export', 'Exportar')}
             </button>
@@ -383,6 +440,24 @@ export function ClientContractorsSection({ clientId }: { clientId: number }) {
             </div>
           </div>
         </div>
+      )}
+      {showExportModal && (
+        <ExportModal 
+          title={t('export.title', 'Exportar Contratistas')}
+          initialColumns={[
+            { key: 'Nombre', label: t('contractors.colName', 'Nombre'), selected: true },
+            { key: 'Tipo', label: t('contractors.colKind', 'Tipo'), selected: true },
+            { key: 'TipoDocumento', label: t('contractors.colIdType', 'Tipo de Documento'), selected: true },
+            { key: 'NumeroDocumento', label: t('contractors.colId', 'Número de Documento'), selected: true },
+            { key: 'Email', label: t('party.email', 'Email'), selected: true },
+            { key: 'Telefono', label: t('party.phone', 'Teléfono'), selected: true },
+            { key: 'Address', label: t('import.colAddress', 'Dirección'), selected: true },
+            { key: 'Estado', label: t('docTypes.colStatus', 'Estado'), selected: true },
+          ]}
+          onClose={() => setShowExportModal(false)}
+          onExport={handleExportConfirm}
+          isExporting={bulkDissociating}
+        />
       )}
       {showBulkDissociateConfirm && (
         <div className="overlay" role="alertdialog" aria-modal="true" aria-label={t('clients.detail.confirmBulkDissociateTitle', 'Quitar contratistas')}>

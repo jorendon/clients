@@ -48,6 +48,7 @@ export interface DuplicateMatch {
 
 export interface DuplicateResult {
   name: string;
+  exactMatch?: boolean;
   matches: DuplicateMatch[];
 }
 

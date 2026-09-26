@@ -684,17 +684,18 @@ export class PartiesService {
       const normName = normalizeName(name);
       
       // Try exact match first on normalized names
-      let matches = parties.filter(p => normalizeName(p.fullName) === normName);
+      let exactMatches = parties.filter(p => normalizeName(p.fullName) === normName);
+      if (exactMatches.length > 0) {
+        return { name, exactMatch: true, matches: exactMatches };
+      }
       
       // If no exact match, try fuzzy (contains)
-      if (matches.length === 0) {
-        matches = parties.filter(p => {
-          const normP = normalizeName(p.fullName);
-          return normP.includes(normName) || normName.includes(normP);
-        });
-      }
+      let fuzzyMatches = parties.filter(p => {
+        const normP = normalizeName(p.fullName);
+        return normP.includes(normName) || normName.includes(normP);
+      });
 
-      return { name, matches };
+      return { name, exactMatch: false, matches: fuzzyMatches };
     });
 
     return results;

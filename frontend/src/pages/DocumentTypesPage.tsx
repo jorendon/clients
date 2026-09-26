@@ -123,7 +123,7 @@ export function DocumentTypesPage() {
           <h1>{t('docTypes.title')}</h1>
           <p className="muted">{t('docTypes.subtitle')}</p>
         </div>
-        <button type="button" className="btn primary" onClick={openCreate}>
+        <button type="button" className="btn success" onClick={openCreate}>
           {t('docTypes.new')}
         </button>
       </header>

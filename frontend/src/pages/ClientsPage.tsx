@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { Pencil, UserX } from 'lucide-react';
+import { Pencil, UserX, Download } from 'lucide-react';
+import { ExportModal, type ExportFormat } from '../components/ExportModal';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+import { useBranding } from '../branding/BrandingContext';
 import {
   createClient,
   fetchClientDetail,
@@ -36,6 +41,9 @@ export function ClientsPage() {
   const [typeFilter, setTypeFilter] = useState<'ALL' | ClientType>('ALL');
   const [toast, setToast] = useState<Toast>(null);
   const [viewingClient, setViewingClient] = useState<Party | null>(null);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const { branding } = useBranding();
+  const [exporting, setExporting] = useState(false);
 
   const { items: sortedClients, requestSort, getSortIndicator } = useSortableTable(clients, { key: 'fullName', direction: 'asc' }, (item, key) => {
     if (key === 'clientType') return clientTypeLabel(item);
@@ -119,6 +127,73 @@ export function ClientsPage() {
     }
   }
 
+  async function handleExportConfirm(format: ExportFormat, selectedColumns: string[]) {
+    setExporting(true);
+    try {
+      const data = sortedClients.map(c => {
+        const row: Record<string, string> = {};
+        if (selectedColumns.includes('Nombre')) row[t('clients.colName', 'Nombre')] = c.fullName;
+        if (selectedColumns.includes('Tipo')) row[t('clients.colKind', 'Tipo')] = c.kind === 'COMPANY' ? t('clients.kindCompany') : t('clients.kindPerson');
+        if (selectedColumns.includes('ClientType')) row[t('clients.colClientType', 'Tipo de Cliente')] = clientTypeLabel(c);
+        if (selectedColumns.includes('IdType')) row[t('clients.colIdType', 'Tipo de ID')] = c.documentType?.code ?? '';
+        if (selectedColumns.includes('IdNumber')) row[t('clients.colId', 'Número de ID')] = c.documentNumber ?? c.registryNumber ?? '';
+        if (selectedColumns.includes('Email')) row[t('party.email', 'Email')] = c.email ?? '';
+        if (selectedColumns.includes('Phone')) row[t('party.phone', 'Teléfono')] = c.phone ?? '';
+        if (selectedColumns.includes('Address')) {
+          const addr = c.addresses?.find(a => a.kind === 'FISCAL') || c.addresses?.[0];
+          row[t('import.colAddress', 'Dirección')] = addr ? [addr.street, addr.city, addr.state, addr.zip].filter(Boolean).join(', ') : '';
+        }
+        if (selectedColumns.includes('Contractors')) row[t('clients.colContractors', 'Contratistas')] = String(c._count?.clientLinks ?? 0);
+        return row;
+      });
+
+      const safeAppName = branding.companyName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const dateStr = new Date().toISOString().split('T')[0];
+      const baseFileName = `${safeAppName}_clientes_${dateStr}_${typeFilter.toLowerCase()}`;
+
+      if (format === 'EXCEL') {
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Clientes');
+        XLSX.writeFile(wb, `${baseFileName}.xlsx`);
+      } else if (format === 'PDF') {
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        
+        doc.setFontSize(18);
+        doc.setTextColor(40, 40, 40);
+        doc.text(branding.companyName, pageWidth / 2, 22, { align: 'center' });
+        
+        doc.setFontSize(11);
+        doc.setTextColor(100, 100, 100);
+        const filterText = typeFilter === 'ALL' ? t('clients.typeAll') : (typeFilter === 'ACCOUNTING' ? t('clients.typeAccounting') : t('clients.typePayroll'));
+        doc.text(`${t('clients.title', 'Clientes')} (${filterText})`, pageWidth / 2, 30, { align: 'center' });
+        
+        if (data.length > 0) {
+          const headers = Object.keys(data[0]);
+          const body = data.map(row => headers.map(h => row[h]));
+          
+          autoTable(doc, {
+            startY: 38,
+            head: [headers],
+            body: body,
+            theme: 'striped',
+            headStyles: { fillColor: branding.sidebarColor },
+            styles: { fontSize: 9, cellPadding: 4 },
+          });
+        } else {
+          doc.text(t('clients.emptyTitle', 'No hay datos'), pageWidth / 2, 45, { align: 'center' });
+        }
+        
+        doc.save(`${baseFileName}.pdf`);
+      }
+    } catch (error) {
+      setToast({ kind: 'error', message: getApiErrorMessage(t, error) });
+    } finally {
+      setExporting(false);
+    }
+  }
+
   function clientTypeLabel(client: Party): string {
     const types = getClientTypes(client);
     if (types.length === 0) return t('common.notAssigned');
@@ -139,7 +214,7 @@ export function ClientsPage() {
           <Link to="/clients/import" className="btn">
             {t('import.bulkClients')}
           </Link>
-          <button type="button" className="btn primary" onClick={openCreate}>
+          <button type="button" className="btn success" onClick={openCreate}>
             {t('clients.new')}
           </button>
         </div>
@@ -157,6 +232,7 @@ export function ClientsPage() {
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value as 'ALL' | ClientType)}
           aria-label={t('clients.typeLabel')}
+          style={{ marginRight: 'auto' }}
         >
           <option value="ALL">{t('clients.typeAll')}</option>
           {VISIBLE_CLIENT_TYPES.map((type) => (
@@ -165,6 +241,12 @@ export function ClientsPage() {
             </option>
           ))}
         </select>
+        {clients.length > 0 && (
+          <button type="button" className="btn ghost" onClick={() => setShowExportModal(true)} title={t('common.export', 'Exportar')} style={{ display: 'inline-flex', gap: '0.4rem', alignItems: 'center' }}>
+            <Download size={16} />
+            {t('common.export', 'Exportar')}
+          </button>
+        )}
       </section>
 
       {toast && (
@@ -285,6 +367,26 @@ export function ClientsPage() {
 
       {viewingClient && (
         <PartyDetailModal party={viewingClient} onClose={() => setViewingClient(null)} />
+      )}
+
+      {showExportModal && (
+        <ExportModal 
+          title={t('common.export', 'Exportar')}
+          initialColumns={[
+            { key: 'Nombre', label: t('clients.colName', 'Nombre'), selected: true },
+            { key: 'Tipo', label: t('clients.colKind', 'Tipo'), selected: true },
+            { key: 'ClientType', label: t('clients.colClientType', 'Tipo de Cliente'), selected: true },
+            { key: 'IdType', label: t('clients.colIdType', 'Tipo de ID'), selected: true },
+            { key: 'IdNumber', label: t('clients.colId', 'Número de ID'), selected: true },
+            { key: 'Email', label: t('party.email', 'Email'), selected: true },
+            { key: 'Phone', label: t('party.phone', 'Teléfono'), selected: true },
+            { key: 'Address', label: t('import.colAddress', 'Dirección'), selected: true },
+            { key: 'Contractors', label: t('clients.colContractors', 'Contratistas'), selected: true },
+          ]}
+          onClose={() => setShowExportModal(false)}
+          onExport={handleExportConfirm}
+          isExporting={exporting}
+        />
       )}
 
       {confirmUnmark && (

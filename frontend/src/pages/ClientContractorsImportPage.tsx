@@ -200,11 +200,19 @@ export function ClientContractorsImportPage({ clientId }: { clientId: number }) 
         const names = deduplicated.map((r) => r.name);
         try {
           const results = await checkContractorDuplicates(clientId, names);
-          const withMatches = results.filter((r) => r.matches.length > 0);
-          setDuplicateConflicts(withMatches);
           
-          finalRows = deduplicated.map(r => {
-            const hasConflict = withMatches.some(m => m.name === r.name);
+          // Filter out rows that have an exact match in the DB
+          const exactMatches = results.filter(r => r.exactMatch);
+          const exactMatchNames = new Set(exactMatches.map(r => r.name));
+          
+          const filteredDeduplicated = deduplicated.filter(r => !exactMatchNames.has(r.name));
+
+          // Only show conflicts for fuzzy matches
+          const withFuzzyMatches = results.filter((r) => !r.exactMatch && r.matches.length > 0);
+          setDuplicateConflicts(withFuzzyMatches);
+          
+          finalRows = filteredDeduplicated.map(r => {
+            const hasConflict = withFuzzyMatches.some(m => m.name === r.name);
             return hasConflict ? { ...r, mergeId: 'new' as any } : r;
           });
         } catch (err) {

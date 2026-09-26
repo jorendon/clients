@@ -131,7 +131,7 @@ export function UsersPage() {
             {t('users.subtitleActive', { count: activeCount })} {t('users.subtitleSuffix')}
           </p>
         </div>
-        <button type="button" className="btn primary" onClick={openCreate}>
+        <button type="button" className="btn success" onClick={openCreate}>
           {t('users.new')}
         </button>
       </header>

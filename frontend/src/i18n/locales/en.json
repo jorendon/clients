@@ -12,8 +12,8 @@
     "usersDesc": "Invite and manage your team's access to the system.",
     "import": "Bulk Import",
     "importDesc": "Import multiple records from a CSV or Excel file.",
-    "importContractors": "Contractors Bulk Import",
-    "importContractorsDesc": "Upload the layout in Excel or CSV format.",
+    "importContractors": "Bulk Upload (Contractors)",
+    "importContractorsDesc": "Upload Excel or CSV layout",
     "quickActions": "Quick Actions"
   },
   "nav": {
@@ -46,7 +46,7 @@
     "delete": "Delete",
     "restore": "Restore",
     "retry": "Retry",
-    "search": "Search",
+    "search": "Search...",
     "remove": "Remove",
     "export": "Export",
     "exportCsv": "Export to CSV",
@@ -83,7 +83,7 @@
     "role": "Role",
     "status": "Status",
     "actions": "Actions",
-    "loading": "Loading users",
+    "loading": "Loading...",
     "emptyTitle": "No users yet",
     "emptyHint": "Create the first one with the “New user” button.",
     "active": "Active",
@@ -139,14 +139,14 @@
     "typeAll": "All",
     "typeAccounting": "Accounting",
     "typePayroll": "Payroll",
-    "emptyTitle": "No clients yet",
+    "emptyTitle": "No clients",
     "emptyHint": "Register the first one with the “New client” button.",
     "loadErrorTitle": "Could not load clients",
     "colName": "Name",
-    "colKind": "Entity type",
-    "colClientType": "Client type",
-    "colIdType": "ID type",
-    "colId": "ID",
+    "colKind": "Type",
+    "colClientType": "Client Type",
+    "colIdType": "ID Type",
+    "colId": "ID Number",
     "colContractors": "Contractors",
     "kindPerson": "Person",
     "kindCompany": "Company",
@@ -189,7 +189,13 @@
       "unmark": "Remove client mark",
       "unmarkTitle": "Remove client mark from {{name}}",
       "unmarkDescription": "It will no longer show under Clients, but it is kept as a contractor with all its data."
-    }
+    },
+    "selectClient": "Select Client",
+    "manageClients": "Manage Clients",
+    "selectClientToViewSettings": "Select a client",
+    "selectClientSettingsHint": "Please select a client in the top menu to view its settings.",
+    "selectClientToViewContractors": "Select a client",
+    "selectClientHint": "Please select a client in the top menu to view its contractors."
   },
   "contractors": {
     "eyebrow": "Clients · Contractors",
@@ -206,19 +212,22 @@
     "filterAll": "All statuses",
     "filterComplete": "Complete",
     "filterIncomplete": "Incomplete",
-    "statusComplete": "COMPLETE",
-    "statusIncomplete": "INCOMPLETE",
+    "statusComplete": "Complete",
+    "statusIncomplete": "Incomplete",
     "isClientBadge": "Client",
     "emptyTitle": "No contractors yet",
     "emptyHint": "Register the first one with the “New contractor” button.",
     "loadErrorTitle": "Could not load contractors",
-    "colName": "Name / Business name",
+    "colName": "Name",
     "colKind": "Type",
-    "colIdType": "ID type",
-    "colId": "ID",
+    "colIdType": "Document Type",
+    "colId": "Document Number",
     "colClients": "Clients",
     "deleteTitle": "Delete {{name}}",
-    "deleteDescription": "This is a soft delete: it will disappear from clients and contractors, but you can restore it."
+    "deleteDescription": "This is a soft delete: it will disappear from clients and contractors, but you can restore it.",
+    "colEmail": "Email",
+    "colPhone": "Phone",
+    "colStatus": "Status"
   },
   "docTypes": {
     "eyebrow": "Clients · Catalogs",
@@ -354,7 +363,9 @@
     "addEmail": "Add email",
     "addPhone": "Add phone",
     "addAddress": "Add address",
-    "default": "Default"
+    "default": "Default",
+    "identityContact": "Identity and Contact",
+    "brandingVisual": "Visual Branding"
   },
   "errors": {
     "user": {
@@ -415,5 +426,12 @@
     "passwordMismatch": "Passwords do not match",
     "saved": "Profile updated successfully",
     "noChanges": "No changes to save"
+  },
+  "export": {
+    "title": "Export Contractors",
+    "subtitle": "Select the columns you want to include in the generated report.",
+    "excel": "Export to Excel",
+    "pdf": "Download PDF",
+    "selectAll": "Select all"
   }
 }

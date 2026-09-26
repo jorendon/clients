@@ -501,6 +501,15 @@ h1 {
   background: var(--primary-dark);
 }
 
+.btn.success {
+  background: var(--ok);
+  color: white;
+}
+
+.btn.success:hover {
+  background: #004d33;
+}
+
 .btn.ghost {
   background: transparent;
 }

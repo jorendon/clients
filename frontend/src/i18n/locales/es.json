@@ -13,7 +13,7 @@
     "import": "Carga Masiva",
     "importDesc": "Importar múltiples registros desde un archivo CSV o Excel.",
     "importContractors": "Carga Masiva (Contratistas)",
-    "importContractorsDesc": "Sube el layout en Excel o CSV.",
+    "importContractorsDesc": "Sube el layout en Excel o CSV",
     "quickActions": "Acciones Rápidas"
   },
   "nav": {
@@ -31,7 +31,7 @@
   },
   "auth": {
     "title": "Iniciar sesión",
-    "subtitle": "¡Bienvenido/a de nuevo! Por favor ingresa tus datos.",
+    "subtitle": "¡Bienvenido! Por favor ingresa tus datos.",
     "email": "Email",
     "password": "Contraseña",
     "submit": "Entrar",
@@ -46,7 +46,7 @@
     "delete": "Eliminar",
     "restore": "Restaurar",
     "retry": "Reintentar",
-    "search": "Buscar",
+    "search": "Buscar...",
     "export": "Exportar",
     "exportCsv": "Exportar a CSV",
     "close": "Cerrar",
@@ -82,7 +82,7 @@
     "role": "Rol",
     "status": "Estado",
     "actions": "Acciones",
-    "loading": "Cargando usuarios",
+    "loading": "Cargando...",
     "emptyTitle": "Sin usuarios todavía",
     "emptyHint": "Crea el primero con el botón “Nuevo usuario”.",
     "active": "Activo",
@@ -138,25 +138,25 @@
     "typeAll": "Todos",
     "typeAccounting": "Contabilidad",
     "typePayroll": "Payroll",
-    "emptyTitle": "Sin clientes todavía",
+    "emptyTitle": "No hay clientes",
     "emptyHint": "Registra el primero con el botón “Nuevo cliente”.",
     "loadErrorTitle": "No se pudieron cargar los clientes",
     "colName": "Nombre",
-    "colKind": "Tipo entidad",
-    "colClientType": "Tipo cliente",
-    "colIdType": "Tipo ID",
-    "colId": "Identificación",
+    "colKind": "Tipo",
+    "colClientType": "Tipo de Cliente",
+    "colIdType": "Tipo de ID",
+    "colId": "Número de ID",
     "colContractors": "Contratistas",
     "kindPerson": "Persona",
     "kindCompany": "Empresa",
     "settingsTitle": "Configuración de Empresa",
     "settingsCompanyInfo": "Información de la empresa",
-    "settingsCompanyInfoDesc": "Esta información puede usarse para la red o para facturación.",
+    "settingsCompanyInfoDesc": "Esta información puede estar conectada a la Red de Negocios o usarse para facturación.",
     "settingsName": "Nombre",
     "settingsAddress": "Dirección",
     "settingsEmail": "Email",
     "settingsPhone": "Teléfono",
-    "settingsNoneListed": "Ninguno",
+    "settingsNoneListed": "Ninguna",
     "settingsLegalInfo": "Información legal",
     "settingsLegalInfoDesc": "Esta es la información que tu empresa usa para fines fiscales.",
     "settingsLegalName": "Nombre legal de la empresa",
@@ -188,7 +188,13 @@
       "unmark": "Quitar marca de cliente",
       "unmarkTitle": "Quitar marca de cliente a {{name}}",
       "unmarkDescription": "Dejará de verse en Clientes, pero se conserva como contratista con todos sus datos."
-    }
+    },
+    "selectClient": "Seleccionar Cliente",
+    "manageClients": "Administrar Clientes",
+    "selectClientToViewSettings": "Seleccione un cliente",
+    "selectClientSettingsHint": "Por favor, seleccione un cliente en el menú superior para ver su configuración.",
+    "selectClientToViewContractors": "Seleccione un cliente",
+    "selectClientHint": "Por favor, seleccione un cliente en el menú superior para ver sus contratistas."
   },
   "contractors": {
     "eyebrow": "Clients · Contratistas",
@@ -205,19 +211,22 @@
     "filterAll": "Todos los estados",
     "filterComplete": "Completos",
     "filterIncomplete": "Incompletos",
-    "statusComplete": "COMPLETO",
-    "statusIncomplete": "INCOMPLETO",
+    "statusComplete": "Completo",
+    "statusIncomplete": "Incompleto",
     "isClientBadge": "Cliente",
     "emptyTitle": "Sin contratistas todavía",
     "emptyHint": "Registra la primera con el botón “Nueva contratista”.",
     "loadErrorTitle": "No se pudieron cargar las contratistas",
-    "colName": "Nombre / Razón social",
+    "colName": "Nombre",
     "colKind": "Tipo",
-    "colIdType": "Tipo ID",
-    "colId": "Identificación",
+    "colIdType": "Tipo de Documento",
+    "colId": "Número de Documento",
     "colClients": "Clientes",
     "deleteTitle": "Eliminar a {{name}}",
-    "deleteDescription": "Es una eliminación lógica: desaparecerá de clientes y contratistas, pero podrás restaurarla."
+    "deleteDescription": "Es una eliminación lógica: desaparecerá de clientes y contratistas, pero podrás restaurarla.",
+    "colEmail": "Email",
+    "colPhone": "Teléfono",
+    "colStatus": "Estado"
   },
   "docTypes": {
     "eyebrow": "Clients · Catálogos",
@@ -332,7 +341,8 @@
     "downloadTemplate": "Descargar plantilla CSV",
     "close": "Cerrar"
   },
-  "settings": {    "eyebrow": "Clients · Configuración",
+  "settings": {
+    "eyebrow": "Clients · Configuración",
     "title": "Datos de la empresa",
     "subtitle": "Personaliza el logo, el nombre y los datos que se muestran en la aplicación.",
     "companyName": "Nombre de la empresa *",
@@ -352,7 +362,9 @@
     "addEmail": "Añadir correo",
     "addPhone": "Añadir teléfono",
     "addAddress": "Añadir dirección",
-    "default": "Por defecto"
+    "default": "Por defecto",
+    "identityContact": "Identidad y Contacto",
+    "brandingVisual": "Branding Visual"
   },
   "errors": {
     "user": {
@@ -413,5 +425,12 @@
     "passwordMismatch": "Las contraseñas no coinciden",
     "saved": "Perfil actualizado correctamente",
     "noChanges": "No hay cambios que guardar"
+  },
+  "export": {
+    "title": "Exportar Contratistas",
+    "subtitle": "Selecciona las columnas que deseas incluir en el reporte generado.",
+    "excel": "Exportar a Excel",
+    "pdf": "Descargar PDF",
+    "selectAll": "Seleccionar todo"
   }
 }
